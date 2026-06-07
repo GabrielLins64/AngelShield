@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>AngelShield</title>
+    <link rel="stylesheet" href="./manager.css">
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="hero">
+        <div class="hero-copy-block">
+          <p class="eyebrow">AngelShield</p>
+          <h1>Cofre local com preenchimento assistido</h1>
+          <p class="hero-copy">
+            Guarde credenciais e preencha logins facilmente com uma segurança inquebrável.
+          </p>
+        </div>
+      </header>
+
+      <main class="dashboard-stack">
+        <section class="panel panel-list">
+          <div class="panel-heading panel-heading-list">
+            <div>
+              <p class="section-kicker">Cofre</p>
+              <h2>Registros salvos</h2>
+            </div>
+            <div class="panel-summary">
+              <span id="record-count-label" class="summary-pill">0 registros</span>
+              <div class="hero-actions panel-actions-inline">
+                <button id="open-record-modal-button" class="button button-primary" type="button">Novo registro</button>
+                <button id="open-settings-modal-button" class="button button-secondary" type="button">Configurações</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="search-row">
+            <label class="search-field" for="record-search-input">
+              <span class="search-label">Buscar por identificador ou usuário</span>
+              <input id="record-search-input" type="search" placeholder="Ex.: github, email@dominio.com">
+            </label>
+          </div>
+
+          <div id="records-empty-state" class="empty-state" hidden>
+            Nenhum registro encontrado.
+          </div>
+
+          <div id="records-list" class="records-list"></div>
+        </section>
+      </main>
+    </div>
+
+    <button
+      id="vault-fab"
+      class="vault-fab"
+      type="button"
+      aria-label="Destrancar"
+      data-tooltip="Destrancar"
+    ></button>
+
+    <div id="toast" class="toast" hidden></div>
+
+    <dialog id="record-dialog" class="sheet-dialog">
+      <form id="record-form" class="sheet-form" method="dialog">
+        <div class="sheet-header">
+          <div>
+            <p class="section-kicker">Registro</p>
+            <h2 id="form-title">Novo registro</h2>
+          </div>
+          <button id="close-record-dialog-button" class="icon-button" type="button" aria-label="Fechar modal de registro">×</button>
+        </div>
+
+        <input id="record-id" type="hidden">
+
+        <label class="field">
+          <span>Identificador</span>
+          <input id="identifier-input" type="text" placeholder="Ex.: GitHub pessoal" required>
+        </label>
+
+        <label class="field">
+          <span>Usuário</span>
+          <input id="username-input" type="text" placeholder="email@dominio.com">
+        </label>
+
+        <label class="field">
+          <span>Link</span>
+          <input id="link-input" type="url" placeholder="https://exemplo.com/login">
+        </label>
+
+        <label class="field">
+          <span>Senha</span>
+          <input id="password-input" type="password" placeholder="Nova senha ou deixe em branco para manter a atual">
+        </label>
+
+        <label class="field">
+          <span>Dica</span>
+          <textarea id="hint-input" rows="3" placeholder="Observação opcional"></textarea>
+        </label>
+
+        <div class="form-actions">
+          <button class="button button-primary" type="submit">Salvar registro</button>
+          <button id="clear-form-button" class="button button-ghost" type="button">Limpar</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="settings-dialog" class="sheet-dialog">
+      <div class="sheet-form">
+        <div class="sheet-header">
+          <div>
+            <p class="section-kicker">Configuração</p>
+            <h2>Salt global e portabilidade</h2>
+          </div>
+          <button id="close-settings-dialog-button" class="icon-button" type="button" aria-label="Fechar modal de configuração">×</button>
+        </div>
+
+        <div class="tools-stack">
+          <label class="field">
+            <span>Salt global</span>
+            <input id="global-salt-input" type="text" placeholder="angelshield-default-salt">
+          </label>
+
+          <button id="save-salt-button" class="button button-secondary" type="button">Aplicar novo salt</button>
+
+          <div class="import-export-row">
+            <button id="export-button" class="button button-secondary" type="button">Exportar CSV</button>
+            <button id="import-button" class="button button-secondary" type="button">Importar CSV</button>
+            <input id="import-file-input" type="file" accept=".csv,text/csv" hidden>
+          </div>
+
+          <p class="panel-note">
+            A exportação usa `encryptedPassword`. Na importação você pode usar `encryptedPassword` ou `password`.
+          </p>
+        </div>
+      </div>
+    </dialog>
+
+    <dialog id="unlock-dialog" class="sheet-dialog">
+      <form id="unlock-form" class="sheet-form" method="dialog">
+        <div class="sheet-header">
+          <div>
+            <p class="section-kicker">Key</p>
+            <h2 id="unlock-title">Destrancar cofre</h2>
+          </div>
+          <button id="unlock-cancel-button" class="icon-button" value="cancel" type="button" aria-label="Cancelar">×</button>
+        </div>
+
+        <p id="unlock-description" class="sheet-copy">
+          Informe a key para mantê-la apenas em memória e liberar operações que dependem da senha.
+        </p>
+
+        <label class="field">
+          <span>Key</span>
+          <input id="unlock-key-input" type="password" autocomplete="off" autofocus required>
+        </label>
+
+        <div class="form-actions">
+          <button id="unlock-confirm-button" class="button button-primary" value="confirm" type="submit">Destrancar</button>
+        </div>
+      </form>
+    </dialog>
+
+    <script src="../lib/shared.js"></script>
+    <script src="./manager.js"></script>
+  </body>
+</html>

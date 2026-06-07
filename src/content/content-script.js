@@ -1,0 +1,595 @@
+(function bootstrapContentScript() {
+  const state = {
+    activeFields: null,
+    filterQuery: '',
+    isDropdownOpen: false,
+    locked: true,
+    records: [],
+    selectedRecordId: '',
+  };
+
+  const trigger = document.createElement('button');
+  trigger.className = 'angelshield-trigger';
+  trigger.type = 'button';
+  trigger.hidden = true;
+  trigger.title = 'Abrir AngelShield para este login';
+  trigger.innerHTML = `
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M12 3l7 3v5c0 4.2-2.7 8.1-7 10-4.3-1.9-7-5.8-7-10V6l7-3z"></path>
+      <path d="M9.5 12.5l1.7 1.7 3.3-3.7"></path>
+    </svg>
+  `;
+
+  const panel = document.createElement('div');
+  panel.className = 'angelshield-panel';
+  panel.hidden = true;
+  panel.innerHTML = `
+    <h3>AngelShield</h3>
+    <p>Escolha um registro salvo para preencher este login.</p>
+    <div class="angelshield-panel-body">
+      <div class="angelshield-combobox">
+        <input
+          id="angelshield-record-input"
+          class="angelshield-combobox-input"
+          type="text"
+          placeholder="Buscar credencial"
+          autocomplete="off"
+          spellcheck="false"
+        >
+        <div id="angelshield-record-dropdown" class="angelshield-combobox-dropdown" hidden></div>
+      </div>
+      <div id="angelshield-key-wrap" hidden>
+        <input id="angelshield-key-input" type="password" placeholder="Informe a key para usar esta senha">
+      </div>
+      <div id="angelshield-feedback" class="angelshield-muted"></div>
+      <div class="angelshield-panel-actions">
+        <button id="angelshield-fill-button" class="angelshield-primary" type="button">Preencher</button>
+        <button id="angelshield-open-button" class="angelshield-secondary" type="button">Abrir cofre</button>
+      </div>
+    </div>
+  `;
+
+  document.documentElement.append(trigger, panel);
+
+  const recordInput = panel.querySelector('#angelshield-record-input');
+  const recordDropdown = panel.querySelector('#angelshield-record-dropdown');
+  const keyWrap = panel.querySelector('#angelshield-key-wrap');
+  const keyInput = panel.querySelector('#angelshield-key-input');
+  const feedback = panel.querySelector('#angelshield-feedback');
+  const fillButton = panel.querySelector('#angelshield-fill-button');
+  const openButton = panel.querySelector('#angelshield-open-button');
+
+  function isExtensionElement(element) {
+    return Boolean(
+      element instanceof Element
+      && (panel.contains(element) || trigger.contains(element)),
+    );
+  }
+
+  async function sendMessage(type, payload = {}) {
+    const response = await chrome.runtime.sendMessage({
+      type,
+      ...payload,
+    });
+
+    if (!response?.success) {
+      throw new Error(response?.error || 'Falha de comunicação com a extensão.');
+    }
+
+    return response.data;
+  }
+
+  function isVisible(element) {
+    if (!(element instanceof HTMLElement)) {
+      return false;
+    }
+
+    if (isExtensionElement(element)) {
+      return false;
+    }
+
+    const style = window.getComputedStyle(element);
+    const rect = element.getBoundingClientRect();
+    return style.visibility !== 'hidden' && style.display !== 'none' && rect.width > 0 && rect.height > 0;
+  }
+
+  function isCandidateUsernameInput(element) {
+    if (!(element instanceof HTMLInputElement) || !isVisible(element)) {
+      return false;
+    }
+
+    const type = (element.getAttribute('type') || 'text').toLowerCase();
+    const autocomplete = (element.getAttribute('autocomplete') || '').toLowerCase();
+    return ['text', 'email', 'tel', 'url'].includes(type) || autocomplete.includes('username') || autocomplete.includes('email');
+  }
+
+  function isCandidatePasswordInput(element) {
+    return element instanceof HTMLInputElement && element.type === 'password' && isVisible(element);
+  }
+
+  function findAssociatedPassword(target) {
+    if (isCandidatePasswordInput(target)) {
+      return target;
+    }
+
+    const scope = target.form || target.closest('form') || target.closest('section, article, div') || document;
+    const passwordInputs = Array.from(scope.querySelectorAll('input[type="password"]')).filter(isVisible);
+    return passwordInputs[0] || null;
+  }
+
+  function findAssociatedUsername(passwordInput) {
+    if (!passwordInput) {
+      return null;
+    }
+
+    const scope = passwordInput.form || passwordInput.closest('form') || passwordInput.closest('section, article, div') || document;
+    const inputs = Array.from(scope.querySelectorAll('input')).filter(isCandidateUsernameInput);
+
+    for (const input of inputs) {
+      const inputRect = input.getBoundingClientRect();
+      const passwordRect = passwordInput.getBoundingClientRect();
+      if (input !== passwordInput && inputRect.top <= passwordRect.bottom + 80) {
+        return input;
+      }
+    }
+
+    return null;
+  }
+
+  function detectFieldGroup(target) {
+    if (!(target instanceof HTMLInputElement)) {
+      return null;
+    }
+
+    if (isExtensionElement(target)) {
+      return null;
+    }
+
+    const passwordInput = findAssociatedPassword(target);
+    if (!passwordInput) {
+      return null;
+    }
+
+    const usernameInput = isCandidateUsernameInput(target) ? target : findAssociatedUsername(passwordInput);
+    const anchorInput = usernameInput || passwordInput || target;
+
+    return {
+      anchorInput,
+      passwordInput,
+      usernameInput,
+    };
+  }
+
+  function formatRecordLabel(record) {
+    return `${record.identifier}${record.username ? ` (${record.username})` : ''}`;
+  }
+
+  function getFilteredRecords() {
+    const query = state.filterQuery.trim().toLowerCase();
+
+    if (!query) {
+      return state.records;
+    }
+
+    return state.records.filter((record) => {
+      const identifier = (record.identifier || '').toLowerCase();
+      const username = (record.username || '').toLowerCase();
+      return identifier.includes(query) || username.includes(query);
+    });
+  }
+
+  function getSelectedRecord() {
+    return state.records.find((record) => record.id === state.selectedRecordId) || null;
+  }
+
+  function positionTriggerNear(anchor) {
+    const rect = anchor.getBoundingClientRect();
+    const maxLeft = window.innerWidth - trigger.offsetWidth - 8;
+    const left = Math.max(8, Math.min(rect.right - trigger.offsetWidth, maxLeft));
+    const top = Math.max(8, Math.min(rect.top + (rect.height - trigger.offsetHeight) / 2, window.innerHeight - trigger.offsetHeight - 8));
+
+    trigger.style.left = `${left}px`;
+    trigger.style.top = `${top}px`;
+  }
+
+  function positionPanelNear(anchor) {
+    const rect = anchor.getBoundingClientRect();
+    const maxLeft = window.innerWidth - panel.offsetWidth - 8;
+    const preferredLeft = rect.left;
+    const left = Math.max(8, Math.min(preferredLeft, maxLeft));
+    const preferredTop = rect.bottom + 10;
+    const fallbackTop = rect.top - panel.offsetHeight - 10;
+    const top = preferredTop + panel.offsetHeight <= window.innerHeight - 8
+      ? preferredTop
+      : Math.max(8, fallbackTop);
+
+    panel.style.left = `${left}px`;
+    panel.style.top = `${top}px`;
+  }
+
+  function updateFloatingUiPositions() {
+    const anchor = state.activeFields?.anchorInput;
+
+    if (!anchor || !anchor.isConnected || !isVisible(anchor)) {
+      hideAll();
+      syncActiveFields();
+      return;
+    }
+
+    if (!trigger.hidden) {
+      positionTriggerNear(anchor);
+    }
+
+    if (!panel.hidden) {
+      positionPanelNear(anchor);
+    }
+  }
+
+  function showTriggerFor(fields) {
+    state.activeFields = fields;
+    trigger.hidden = false;
+    requestAnimationFrame(updateFloatingUiPositions);
+  }
+
+  function closeDropdown(restoreSelection = true) {
+    state.isDropdownOpen = false;
+    recordDropdown.hidden = true;
+
+    if (restoreSelection) {
+      const selectedRecord = getSelectedRecord();
+      if (selectedRecord) {
+        recordInput.value = formatRecordLabel(selectedRecord);
+      } else if (!state.filterQuery.trim()) {
+        recordInput.value = '';
+      }
+    }
+  }
+
+  function hidePanel() {
+    panel.hidden = true;
+    keyInput.value = '';
+    feedback.className = 'angelshield-muted';
+    feedback.textContent = '';
+    closeDropdown(true);
+  }
+
+  function hideAll() {
+    trigger.hidden = true;
+    hidePanel();
+  }
+
+  function renderRecordDropdown() {
+    recordDropdown.innerHTML = '';
+    const visibleRecords = getFilteredRecords();
+
+    if (state.records.length === 0) {
+      fillButton.disabled = true;
+      recordInput.value = '';
+      recordInput.disabled = true;
+      feedback.className = 'angelshield-muted';
+      feedback.textContent = 'Abra o cofre para cadastrar um registro.';
+      closeDropdown(false);
+      return;
+    }
+
+    recordInput.disabled = false;
+
+    if (visibleRecords.length === 0) {
+      state.selectedRecordId = '';
+      fillButton.disabled = true;
+      const emptyState = document.createElement('div');
+      emptyState.className = 'angelshield-option angelshield-option-empty';
+      emptyState.textContent = 'Nenhuma credencial encontrada';
+      recordDropdown.appendChild(emptyState);
+      recordDropdown.hidden = !state.isDropdownOpen;
+      feedback.className = 'angelshield-muted';
+      feedback.textContent = 'Ajuste a busca para encontrar outra credencial.';
+      return;
+    }
+
+    if (!visibleRecords.some((record) => record.id === state.selectedRecordId)) {
+      state.selectedRecordId = visibleRecords[0].id;
+    }
+
+    for (const record of visibleRecords) {
+      const option = document.createElement('button');
+      option.type = 'button';
+      option.className = 'angelshield-option';
+      option.dataset.recordId = record.id;
+      option.classList.toggle('is-selected', record.id === state.selectedRecordId);
+      option.innerHTML = `
+        <span class="angelshield-option-title">${record.identifier}</span>
+        <span class="angelshield-option-meta">${record.username || 'Sem usuário'}</span>
+      `;
+      option.addEventListener('mousedown', (event) => {
+        event.preventDefault();
+        state.selectedRecordId = record.id;
+        recordInput.value = formatRecordLabel(record);
+        state.filterQuery = '';
+        closeDropdown(false);
+        recordDropdown.innerHTML = '';
+        feedback.className = 'angelshield-muted';
+        feedback.textContent = state.locked
+          ? 'O cofre está trancado. Informe a key para usar esta senha sem destrancar o cofre.'
+          : 'Cofre destrancado. Você já pode preencher.';
+      });
+      recordDropdown.appendChild(option);
+    }
+
+    fillButton.disabled = false;
+    recordDropdown.hidden = !state.isDropdownOpen;
+    feedback.className = 'angelshield-muted';
+    feedback.textContent = state.locked
+      ? 'O cofre está trancado. Informe a key para usar esta senha sem destrancar o cofre.'
+      : 'Cofre destrancado. Você já pode preencher.';
+  }
+
+  async function loadRecords() {
+    const data = await sendMessage('GET_AUTOFILL_RECORDS', {
+      url: window.location.href,
+    });
+
+    state.records = data.records || [];
+    state.filterQuery = '';
+    state.selectedRecordId = state.records[0]?.id || '';
+    state.locked = Boolean(data.locked);
+    keyWrap.hidden = !state.locked;
+    feedback.className = 'angelshield-muted';
+    keyInput.value = '';
+
+    const selectedRecord = getSelectedRecord();
+    recordInput.value = selectedRecord ? formatRecordLabel(selectedRecord) : '';
+    renderRecordDropdown();
+  }
+
+  function openPanel() {
+    if (!state.activeFields) {
+      syncActiveFields();
+    }
+
+    if (!state.activeFields) {
+      return;
+    }
+
+    panel.hidden = false;
+    requestAnimationFrame(updateFloatingUiPositions);
+    loadRecords().catch((error) => {
+      feedback.className = 'angelshield-error';
+      feedback.textContent = error.message;
+    });
+  }
+
+  function setNativeValue(element, value) {
+    const prototype = Object.getPrototypeOf(element);
+    const descriptor = Object.getOwnPropertyDescriptor(prototype, 'value');
+    descriptor?.set?.call(element, value);
+    element.dispatchEvent(new Event('input', { bubbles: true }));
+    element.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+
+  async function fillSelectedRecord() {
+    const recordId = state.selectedRecordId;
+    if (!recordId) {
+      feedback.className = 'angelshield-error';
+      feedback.textContent = 'Escolha uma credencial para preencher.';
+      return;
+    }
+
+    if (state.locked) {
+      const key = keyInput.value;
+      if (!key.trim()) {
+        feedback.className = 'angelshield-error';
+        feedback.textContent = 'Informe a key para descriptografar esta senha.';
+        return;
+      }
+
+      const secret = await sendMessage('GET_RECORD_SECRET', {
+        id: recordId,
+        key,
+      });
+
+      if (state.activeFields?.usernameInput) {
+        setNativeValue(state.activeFields.usernameInput, secret.username || '');
+      }
+
+      if (state.activeFields?.passwordInput) {
+        setNativeValue(state.activeFields.passwordInput, secret.password || '');
+      }
+
+      feedback.className = 'angelshield-muted';
+      feedback.textContent = `Credenciais de "${secret.identifier}" preenchidas sem destrancar o cofre.`;
+      window.setTimeout(() => {
+        hidePanel();
+      }, 900);
+      return;
+    }
+
+    const secret = await sendMessage('GET_RECORD_SECRET', {
+      id: recordId,
+    });
+
+    if (state.activeFields?.usernameInput) {
+      setNativeValue(state.activeFields.usernameInput, secret.username || '');
+    }
+
+    if (state.activeFields?.passwordInput) {
+      setNativeValue(state.activeFields.passwordInput, secret.password || '');
+    }
+
+    feedback.className = 'angelshield-muted';
+    feedback.textContent = `Credenciais de "${secret.identifier}" preenchidas.`;
+    window.setTimeout(() => {
+      hidePanel();
+    }, 900);
+  }
+
+  function maybeShowForTarget(target) {
+    if (isExtensionElement(target)) {
+      return;
+    }
+
+    const fields = detectFieldGroup(target);
+    if (!fields) {
+      return;
+    }
+
+    showTriggerFor(fields);
+  }
+
+  function scanExistingFields() {
+    if (document.activeElement instanceof HTMLInputElement && !isExtensionElement(document.activeElement)) {
+      const activeFields = detectFieldGroup(document.activeElement);
+      if (activeFields) {
+        return activeFields;
+      }
+    }
+
+    const visiblePasswordInput = Array.from(document.querySelectorAll('input[type="password"]'))
+      .filter((input) => !isExtensionElement(input))
+      .find(isVisible);
+    if (!visiblePasswordInput) {
+      return null;
+    }
+
+    return detectFieldGroup(visiblePasswordInput);
+  }
+
+  function syncActiveFields() {
+    const fields = scanExistingFields();
+    if (fields) {
+      showTriggerFor(fields);
+      return;
+    }
+
+    state.activeFields = null;
+    hideAll();
+  }
+
+  document.addEventListener('focusin', (event) => {
+    maybeShowForTarget(event.target);
+  });
+
+  document.addEventListener('click', (event) => {
+    const target = event.target;
+
+    if (trigger.contains(target)) {
+      event.preventDefault();
+      if (panel.hidden) {
+        openPanel();
+      } else {
+        hidePanel();
+      }
+      return;
+    }
+
+    if (panel.contains(target)) {
+      return;
+    }
+
+    if (target instanceof HTMLInputElement) {
+      maybeShowForTarget(target);
+      hidePanel();
+      return;
+    }
+
+    hidePanel();
+  });
+
+  window.addEventListener('scroll', updateFloatingUiPositions);
+  window.addEventListener('resize', updateFloatingUiPositions);
+  window.addEventListener('focus', syncActiveFields);
+  window.addEventListener('pageshow', syncActiveFields);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      syncActiveFields();
+    }
+  });
+
+  fillButton.addEventListener('click', () => {
+    fillSelectedRecord().catch((error) => {
+      feedback.className = 'angelshield-error';
+      feedback.textContent = error.message;
+    });
+  });
+
+  recordInput.addEventListener('focus', () => {
+    state.isDropdownOpen = true;
+    state.filterQuery = '';
+    const selectedRecord = getSelectedRecord();
+    recordInput.value = selectedRecord ? formatRecordLabel(selectedRecord) : '';
+    recordInput.select();
+    renderRecordDropdown();
+  });
+
+  recordInput.addEventListener('input', (event) => {
+    state.filterQuery = event.target.value || '';
+    state.isDropdownOpen = true;
+    renderRecordDropdown();
+  });
+
+  recordInput.addEventListener('keydown', (event) => {
+    const visibleRecords = getFilteredRecords();
+
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      if (visibleRecords.length === 0) {
+        return;
+      }
+
+      const currentIndex = visibleRecords.findIndex((record) => record.id === state.selectedRecordId);
+      const nextRecord = visibleRecords[(currentIndex + 1 + visibleRecords.length) % visibleRecords.length];
+      state.selectedRecordId = nextRecord.id;
+      renderRecordDropdown();
+      return;
+    }
+
+    if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      if (visibleRecords.length === 0) {
+        return;
+      }
+
+      const currentIndex = visibleRecords.findIndex((record) => record.id === state.selectedRecordId);
+      const nextIndex = currentIndex <= 0 ? visibleRecords.length - 1 : currentIndex - 1;
+      state.selectedRecordId = visibleRecords[nextIndex].id;
+      renderRecordDropdown();
+      return;
+    }
+
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      if (visibleRecords.length === 0) {
+        return;
+      }
+
+      const selectedRecord = visibleRecords.find((record) => record.id === state.selectedRecordId) || visibleRecords[0];
+      state.selectedRecordId = selectedRecord.id;
+      state.filterQuery = '';
+      recordInput.value = formatRecordLabel(selectedRecord);
+      closeDropdown(false);
+      renderRecordDropdown();
+      return;
+    }
+
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      hidePanel();
+    }
+  });
+
+  openButton.addEventListener('click', () => {
+    sendMessage('OPEN_MANAGER_PAGE').catch(() => {});
+  });
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && !panel.hidden) {
+      hidePanel();
+    }
+  });
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', syncActiveFields, { once: true });
+  } else {
+    syncActiveFields();
+  }
+})();

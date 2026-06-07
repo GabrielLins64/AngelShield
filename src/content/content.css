@@ -1,0 +1,173 @@
+.angelshield-trigger {
+  position: fixed;
+  z-index: 2147483646;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border: 0;
+  border-radius: 14px;
+  background:
+    radial-gradient(circle at 30% 30%, rgba(146, 204, 255, 0.3), transparent 40%),
+    linear-gradient(135deg, #2e6ddb, #163f8f);
+  color: #f7fbff;
+  box-shadow:
+    0 12px 30px rgba(6, 17, 39, 0.38),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  cursor: pointer;
+}
+
+.angelshield-trigger svg {
+  width: 20px;
+  height: 20px;
+}
+
+.angelshield-trigger[hidden],
+.angelshield-panel[hidden],
+.angelshield-combobox-dropdown[hidden] {
+  display: none !important;
+}
+
+.angelshield-panel {
+  position: fixed;
+  z-index: 2147483647;
+  width: min(360px, calc(100vw - 24px));
+  padding: 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(116, 167, 255, 0.18);
+  background: rgba(13, 21, 33, 0.98);
+  color: #f3f8ff;
+  box-shadow: 0 24px 64px rgba(1, 7, 18, 0.5);
+  font: 400 14px/1.45 "IBM Plex Sans", "Segoe UI", sans-serif;
+}
+
+.angelshield-panel h3 {
+  margin: 0 0 6px;
+  font: 700 16px/1.2 "Space Grotesk", "Segoe UI", sans-serif;
+}
+
+.angelshield-panel p {
+  margin: 0;
+  color: #aac0df;
+}
+
+.angelshield-panel-body {
+  display: grid;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.angelshield-panel input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid rgba(116, 167, 255, 0.16);
+  border-radius: 12px;
+  background: rgba(5, 12, 22, 0.72);
+  color: inherit;
+  font: inherit;
+}
+
+.angelshield-panel input:focus {
+  outline: none;
+  border-color: rgba(76, 161, 255, 0.62);
+  box-shadow: 0 0 0 4px rgba(76, 161, 255, 0.14);
+}
+
+.angelshield-combobox {
+  position: relative;
+}
+
+.angelshield-combobox-input {
+  padding-right: 38px !important;
+  background-image: linear-gradient(45deg, transparent 50%, #8cbfff 50%), linear-gradient(135deg, #8cbfff 50%, transparent 50%);
+  background-position: calc(100% - 18px) calc(50% - 2px), calc(100% - 12px) calc(50% - 2px);
+  background-size: 6px 6px, 6px 6px;
+  background-repeat: no-repeat;
+}
+
+.angelshield-combobox-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  max-height: 220px;
+  overflow-y: auto;
+  border-radius: 14px;
+  border: 1px solid rgba(116, 167, 255, 0.16);
+  background: rgba(7, 14, 24, 0.98);
+  box-shadow: 0 16px 38px rgba(1, 7, 18, 0.42);
+}
+
+.angelshield-option {
+  display: grid;
+  width: 100%;
+  gap: 2px;
+  padding: 11px 12px;
+  border: 0;
+  border-bottom: 1px solid rgba(116, 167, 255, 0.08);
+  background: transparent;
+  color: #f3f8ff;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+}
+
+.angelshield-option:last-child {
+  border-bottom: 0;
+}
+
+.angelshield-option:hover,
+.angelshield-option.is-selected {
+  background: rgba(76, 161, 255, 0.14);
+}
+
+.angelshield-option-empty {
+  cursor: default;
+  color: #aac0df;
+}
+
+.angelshield-option-title {
+  font-weight: 700;
+}
+
+.angelshield-option-meta {
+  color: #aac0df;
+  font-size: 12px;
+}
+
+.angelshield-panel-actions,
+.angelshield-panel-inline {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.angelshield-panel button {
+  appearance: none;
+  border: 0;
+  border-radius: 999px;
+  padding: 10px 14px;
+  cursor: pointer;
+  font: 700 13px/1 "IBM Plex Sans", "Segoe UI", sans-serif;
+}
+
+.angelshield-panel .angelshield-primary {
+  background: linear-gradient(135deg, #245dbe, #163f8f);
+  color: #f7fbff;
+}
+
+.angelshield-panel .angelshield-secondary {
+  background: rgba(116, 167, 255, 0.12);
+  color: #f3f8ff;
+}
+
+.angelshield-panel .angelshield-muted {
+  color: #aac0df;
+  font-size: 12px;
+}
+
+.angelshield-panel .angelshield-error {
+  color: #ff97a4;
+  font-size: 12px;
+}

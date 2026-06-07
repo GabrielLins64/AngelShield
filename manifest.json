@@ -1,0 +1,22 @@
+{
+  "manifest_version": 3,
+  "name": "AngelShield",
+  "version": "0.1.0",
+  "description": "Gerenciador local de credenciais com criptografia simétrica e preenchimento assistido.",
+  "permissions": ["storage", "tabs", "clipboardWrite"],
+  "host_permissions": ["<all_urls>"],
+  "background": {
+    "service_worker": "src/background/service-worker.js"
+  },
+  "action": {
+    "default_title": "Abrir AngelShield"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["src/content/content-script.js"],
+      "css": ["src/content/content.css"],
+      "run_at": "document_idle"
+    }
+  ]
+}
