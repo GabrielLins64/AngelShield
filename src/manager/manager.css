@@ -263,8 +263,27 @@ select:focus {
   animation: card-enter 280ms ease;
 }
 
+.record-layout,
+.record-main,
+.record-controls {
+  display: grid;
+}
+
+.record-layout {
+  gap: 14px;
+}
+
+.record-main {
+  gap: 10px;
+  min-width: 0;
+}
+
+.record-controls {
+  gap: 12px;
+  align-content: start;
+}
+
 .record-card:hover {
-  transform: translateY(-2px);
   border-color: rgba(122, 178, 255, 0.28);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.04),
@@ -330,6 +349,14 @@ select:focus {
   flex: 1 1 0;
 }
 
+@media (min-width: 760px) {
+  .record-layout {
+    grid-template-columns: minmax(0, 1fr) minmax(260px, 320px);
+    align-items: start;
+    gap: 18px;
+  }
+}
+
 .button,
 .icon-button,
 .vault-fab {
@@ -349,7 +376,9 @@ select:focus {
 .button:hover,
 .icon-button:hover,
 .vault-fab:hover {
-  transform: translateY(-1px);
+  box-shadow:
+    0 0px 16px rgba(15, 56, 131, 0.774),
+    inset 0 1px 0 rgb(58, 106, 146);
 }
 
 .button:active,

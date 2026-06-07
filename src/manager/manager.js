@@ -175,6 +175,12 @@
       const card = document.createElement('article');
       card.className = 'record-card';
 
+      const layout = document.createElement('div');
+      layout.className = 'record-layout';
+
+      const contentBlock = document.createElement('div');
+      contentBlock.className = 'record-main';
+
       const topLine = document.createElement('div');
       topLine.className = 'record-topline';
 
@@ -196,12 +202,12 @@
 
       topLine.appendChild(titleBlock);
 
-      if (record.hasPassword) {
-        const tag = document.createElement('span');
-        tag.className = 'tag';
-        tag.textContent = 'Senha protegida';
-        topLine.appendChild(tag);
-      }
+      // if (record.hasPassword) {
+      //   const tag = document.createElement('span');
+      //   tag.className = 'tag';
+      //   tag.textContent = 'Senha protegida';
+      //   topLine.appendChild(tag);
+      // }
 
       const meta = document.createElement('div');
       meta.className = 'meta-line';
@@ -250,7 +256,13 @@
         }),
       );
 
-      card.append(topLine, meta, hint, copyActions, cardActions);
+      const actionsBlock = document.createElement('div');
+      actionsBlock.className = 'record-controls';
+      actionsBlock.append(copyActions, cardActions);
+
+      contentBlock.append(topLine, meta, hint);
+      layout.append(contentBlock, actionsBlock);
+      card.append(layout);
       elements.recordsList.appendChild(card);
     }
   }
