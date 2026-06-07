@@ -6,21 +6,20 @@
   justify-content: center;
   width: 38px;
   height: 38px;
-  border: 0;
+  padding: 6px;
+  border: 1px solid rgba(116, 167, 255, 0.18);
   border-radius: 14px;
-  background:
-    radial-gradient(circle at 30% 30%, rgba(146, 204, 255, 0.3), transparent 40%),
-    linear-gradient(135deg, #2e6ddb, #163f8f);
-  color: #f7fbff;
+  background: rgba(13, 21, 33, 0.94);
   box-shadow:
     0 12px 30px rgba(6, 17, 39, 0.38),
     inset 0 1px 0 rgba(255, 255, 255, 0.18);
   cursor: pointer;
 }
 
-.angelshield-trigger svg {
-  width: 20px;
-  height: 20px;
+.angelshield-trigger img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
 .angelshield-trigger[hidden],
@@ -45,6 +44,24 @@
 .angelshield-panel h3 {
   margin: 0 0 6px;
   font: 700 16px/1.2 "Space Grotesk", "Segoe UI", sans-serif;
+}
+
+.angelshield-panel-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.angelshield-panel-header h3 {
+  margin: 0;
+}
+
+.angelshield-panel-logo {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  flex: 0 0 28px;
 }
 
 .angelshield-panel p {

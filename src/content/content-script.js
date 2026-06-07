@@ -1,4 +1,5 @@
 (function bootstrapContentScript() {
+  const logoUrl = chrome.runtime.getURL('assets/as_logo-removebg.png');
   const state = {
     activeFields: null,
     filterQuery: '',
@@ -17,17 +18,17 @@
   trigger.hidden = true;
   trigger.title = 'Abrir AngelShield para este login';
   trigger.innerHTML = `
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-      <path d="M12 3l7 3v5c0 4.2-2.7 8.1-7 10-4.3-1.9-7-5.8-7-10V6l7-3z"></path>
-      <path d="M9.5 12.5l1.7 1.7 3.3-3.7"></path>
-    </svg>
+    <img src="${logoUrl}" alt="" aria-hidden="true">
   `;
 
   const panel = document.createElement('div');
   panel.className = 'angelshield-panel';
   panel.hidden = true;
   panel.innerHTML = `
-    <h3>AngelShield</h3>
+    <div class="angelshield-panel-header">
+      <img class="angelshield-panel-logo" src="${logoUrl}" alt="" aria-hidden="true">
+      <h3>AngelShield</h3>
+    </div>
     <p>Escolha um registro salvo para preencher este login.</p>
     <div class="angelshield-panel-body">
       <div class="angelshield-combobox">
