@@ -7,6 +7,9 @@
     records: [],
     selectedRecordId: '',
   };
+  const floatingUiMargin = 8;
+  let floatingUiUpdateFrame = 0;
+  let observedAnchorInput = null;
 
   const trigger = document.createElement('button');
   trigger.className = 'angelshield-trigger';
@@ -59,11 +62,49 @@
   const fillButton = panel.querySelector('#angelshield-fill-button');
   const openButton = panel.querySelector('#angelshield-open-button');
 
+  function scheduleFloatingUiUpdate() {
+    if (!state.activeFields || floatingUiUpdateFrame) {
+      return;
+    }
+
+    floatingUiUpdateFrame = requestAnimationFrame(() => {
+      floatingUiUpdateFrame = 0;
+      updateFloatingUiPositions();
+    });
+  }
+
+  const activeAnchorResizeObserver = typeof ResizeObserver === 'function'
+    ? new ResizeObserver(scheduleFloatingUiUpdate)
+    : null;
+  const floatingUiMutationObserver = typeof MutationObserver === 'function'
+    ? new MutationObserver((mutations) => {
+      if (shouldRepositionAfterPageMutation(mutations)) {
+        scheduleFloatingUiUpdate();
+      }
+    })
+    : null;
+
   function isExtensionElement(element) {
     return Boolean(
       element instanceof Element
       && (panel.contains(element) || trigger.contains(element)),
     );
+  }
+
+  function shouldRepositionAfterPageMutation(mutations) {
+    if (!state.activeFields) {
+      return false;
+    }
+
+    return mutations.some((mutation) => {
+      if (mutation.target instanceof Element && isExtensionElement(mutation.target)) {
+        return false;
+      }
+
+      return [...mutation.addedNodes, ...mutation.removedNodes].some((node) => {
+        return !(node instanceof Element) || !isExtensionElement(node);
+      }) || mutation.type === 'attributes';
+    });
   }
 
   async function sendMessage(type, payload = {}) {
@@ -79,6 +120,42 @@
     return response.data;
   }
 
+  function getViewportBounds() {
+    const visualViewport = window.visualViewport;
+    if (visualViewport) {
+      return {
+        bottom: visualViewport.offsetTop + visualViewport.height,
+        left: visualViewport.offsetLeft,
+        right: visualViewport.offsetLeft + visualViewport.width,
+        top: visualViewport.offsetTop,
+      };
+    }
+
+    return {
+      bottom: window.innerHeight,
+      left: 0,
+      right: window.innerWidth,
+      top: 0,
+    };
+  }
+
+  function clamp(value, min, max) {
+    if (max < min) {
+      return min;
+    }
+
+    return Math.max(min, Math.min(value, max));
+  }
+
+  function isRectInsideViewport(rect, viewport = getViewportBounds()) {
+    return rect.width > 0
+      && rect.height > 0
+      && rect.bottom > viewport.top
+      && rect.top < viewport.bottom
+      && rect.right > viewport.left
+      && rect.left < viewport.right;
+  }
+
   function isVisible(element) {
     if (!(element instanceof HTMLElement)) {
       return false;
@@ -91,6 +168,10 @@
     const style = window.getComputedStyle(element);
     const rect = element.getBoundingClientRect();
     return style.visibility !== 'hidden' && style.display !== 'none' && rect.width > 0 && rect.height > 0;
+  }
+
+  function isVisibleInsideViewport(element) {
+    return isVisible(element) && isRectInsideViewport(element.getBoundingClientRect());
   }
 
   function isCandidateUsernameInput(element) {
@@ -151,7 +232,9 @@
     }
 
     const usernameInput = isCandidateUsernameInput(target) ? target : findAssociatedUsername(passwordInput);
-    const anchorInput = usernameInput || passwordInput || target;
+    const anchorInput = isCandidateUsernameInput(target) || isCandidatePasswordInput(target)
+      ? target
+      : usernameInput || passwordInput || target;
 
     return {
       anchorInput,
@@ -182,11 +265,51 @@
     return state.records.find((record) => record.id === state.selectedRecordId) || null;
   }
 
+  function fieldsContainFocusedElement(fields) {
+    return document.activeElement === fields.anchorInput
+      || document.activeElement === fields.passwordInput
+      || document.activeElement === fields.usernameInput
+      || trigger.contains(document.activeElement)
+      || panel.contains(document.activeElement);
+  }
+
+  function observeActiveAnchor(anchor) {
+    if (!activeAnchorResizeObserver || observedAnchorInput === anchor) {
+      return;
+    }
+
+    if (observedAnchorInput) {
+      activeAnchorResizeObserver.unobserve(observedAnchorInput);
+    }
+
+    observedAnchorInput = anchor;
+    activeAnchorResizeObserver.observe(anchor);
+  }
+
+  function stopObservingActiveAnchor() {
+    if (!activeAnchorResizeObserver || !observedAnchorInput) {
+      return;
+    }
+
+    activeAnchorResizeObserver.unobserve(observedAnchorInput);
+    observedAnchorInput = null;
+  }
+
   function positionTriggerNear(anchor) {
     const rect = anchor.getBoundingClientRect();
-    const maxLeft = window.innerWidth - trigger.offsetWidth - 8;
-    const left = Math.max(8, Math.min(rect.right - trigger.offsetWidth, maxLeft));
-    const top = Math.max(8, Math.min(rect.top + (rect.height - trigger.offsetHeight) / 2, window.innerHeight - trigger.offsetHeight - 8));
+    const viewport = getViewportBounds();
+    const maxLeft = viewport.right - trigger.offsetWidth - floatingUiMargin;
+    const maxTop = viewport.bottom - trigger.offsetHeight - floatingUiMargin;
+    const left = clamp(
+      rect.right - trigger.offsetWidth,
+      viewport.left + floatingUiMargin,
+      maxLeft,
+    );
+    const top = clamp(
+      rect.top + (rect.height - trigger.offsetHeight) / 2,
+      viewport.top + floatingUiMargin,
+      maxTop,
+    );
 
     trigger.style.left = `${left}px`;
     trigger.style.top = `${top}px`;
@@ -194,14 +317,15 @@
 
   function positionPanelNear(anchor) {
     const rect = anchor.getBoundingClientRect();
-    const maxLeft = window.innerWidth - panel.offsetWidth - 8;
+    const viewport = getViewportBounds();
+    const maxLeft = viewport.right - panel.offsetWidth - floatingUiMargin;
     const preferredLeft = rect.left;
-    const left = Math.max(8, Math.min(preferredLeft, maxLeft));
+    const left = clamp(preferredLeft, viewport.left + floatingUiMargin, maxLeft);
     const preferredTop = rect.bottom + 10;
     const fallbackTop = rect.top - panel.offsetHeight - 10;
-    const top = preferredTop + panel.offsetHeight <= window.innerHeight - 8
+    const top = preferredTop + panel.offsetHeight <= viewport.bottom - floatingUiMargin
       ? preferredTop
-      : Math.max(8, fallbackTop);
+      : clamp(fallbackTop, viewport.top + floatingUiMargin, viewport.bottom - panel.offsetHeight - floatingUiMargin);
 
     panel.style.left = `${left}px`;
     panel.style.top = `${top}px`;
@@ -216,6 +340,16 @@
       return;
     }
 
+    if (!isRectInsideViewport(anchor.getBoundingClientRect())) {
+      trigger.hidden = true;
+      hidePanel();
+      return;
+    }
+
+    if (trigger.hidden && panel.hidden && fieldsContainFocusedElement(state.activeFields)) {
+      trigger.hidden = false;
+    }
+
     if (!trigger.hidden) {
       positionTriggerNear(anchor);
     }
@@ -227,8 +361,9 @@
 
   function showTriggerFor(fields) {
     state.activeFields = fields;
+    observeActiveAnchor(fields.anchorInput);
     trigger.hidden = false;
-    requestAnimationFrame(updateFloatingUiPositions);
+    scheduleFloatingUiUpdate();
   }
 
   function closeDropdown(restoreSelection = true) {
@@ -258,6 +393,12 @@
     hidePanel();
   }
 
+  function schedulePanelPositionUpdate() {
+    if (!panel.hidden) {
+      scheduleFloatingUiUpdate();
+    }
+  }
+
   function renderRecordDropdown() {
     recordDropdown.innerHTML = '';
     const visibleRecords = getFilteredRecords();
@@ -269,6 +410,7 @@
       feedback.className = 'angelshield-muted';
       feedback.textContent = 'Abra o cofre para cadastrar um registro.';
       closeDropdown(false);
+      schedulePanelPositionUpdate();
       return;
     }
 
@@ -284,6 +426,7 @@
       recordDropdown.hidden = !state.isDropdownOpen;
       feedback.className = 'angelshield-muted';
       feedback.textContent = 'Ajuste a busca para encontrar outra credencial.';
+      schedulePanelPositionUpdate();
       return;
     }
 
@@ -322,6 +465,8 @@
     feedback.textContent = state.locked
       ? 'O cofre está trancado. Informe a key para usar esta senha sem destrancar o cofre.'
       : 'Cofre destrancado. Você já pode preencher.';
+
+    schedulePanelPositionUpdate();
   }
 
   async function loadRecords() {
@@ -352,7 +497,7 @@
     }
 
     panel.hidden = false;
-    requestAnimationFrame(updateFloatingUiPositions);
+    scheduleFloatingUiUpdate();
     loadRecords().catch((error) => {
       feedback.className = 'angelshield-error';
       feedback.textContent = error.message;
@@ -439,14 +584,14 @@
   function scanExistingFields() {
     if (document.activeElement instanceof HTMLInputElement && !isExtensionElement(document.activeElement)) {
       const activeFields = detectFieldGroup(document.activeElement);
-      if (activeFields) {
+      if (activeFields && isVisibleInsideViewport(activeFields.anchorInput)) {
         return activeFields;
       }
     }
 
     const visiblePasswordInput = Array.from(document.querySelectorAll('input[type="password"]'))
       .filter((input) => !isExtensionElement(input))
-      .find(isVisible);
+      .find(isVisibleInsideViewport);
     if (!visiblePasswordInput) {
       return null;
     }
@@ -462,6 +607,7 @@
     }
 
     state.activeFields = null;
+    stopObservingActiveAnchor();
     hideAll();
   }
 
@@ -495,10 +641,19 @@
     hidePanel();
   });
 
-  window.addEventListener('scroll', updateFloatingUiPositions);
-  window.addEventListener('resize', updateFloatingUiPositions);
+  document.addEventListener('scroll', scheduleFloatingUiUpdate, { capture: true, passive: true });
+  window.addEventListener('scroll', scheduleFloatingUiUpdate, { passive: true });
+  window.addEventListener('resize', scheduleFloatingUiUpdate);
   window.addEventListener('focus', syncActiveFields);
   window.addEventListener('pageshow', syncActiveFields);
+  window.visualViewport?.addEventListener('scroll', scheduleFloatingUiUpdate, { passive: true });
+  window.visualViewport?.addEventListener('resize', scheduleFloatingUiUpdate);
+  floatingUiMutationObserver?.observe(document.documentElement, {
+    attributeFilter: ['aria-hidden', 'class', 'hidden', 'open', 'style'],
+    attributes: true,
+    childList: true,
+    subtree: true,
+  });
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') {
       syncActiveFields();
