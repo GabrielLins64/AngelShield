@@ -53,7 +53,11 @@
     </div>
   `;
 
-  document.documentElement.append(trigger, panel);
+  const backdrop = document.createElement('div');
+  backdrop.className = 'angelshield-backdrop';
+  backdrop.hidden = true;
+
+  document.documentElement.append(trigger, backdrop, panel);
 
   const recordInput = panel.querySelector('#angelshield-record-input');
   const recordDropdown = panel.querySelector('#angelshield-record-dropdown');
@@ -88,7 +92,7 @@
   function isExtensionElement(element) {
     return Boolean(
       element instanceof Element
-      && (panel.contains(element) || trigger.contains(element)),
+      && (panel.contains(element) || trigger.contains(element) || backdrop.contains(element)),
     );
   }
 
@@ -316,22 +320,6 @@
     trigger.style.top = `${top}px`;
   }
 
-  function positionPanelNear(anchor) {
-    const rect = anchor.getBoundingClientRect();
-    const viewport = getViewportBounds();
-    const maxLeft = viewport.right - panel.offsetWidth - floatingUiMargin;
-    const preferredLeft = rect.left;
-    const left = clamp(preferredLeft, viewport.left + floatingUiMargin, maxLeft);
-    const preferredTop = rect.bottom + 10;
-    const fallbackTop = rect.top - panel.offsetHeight - 10;
-    const top = preferredTop + panel.offsetHeight <= viewport.bottom - floatingUiMargin
-      ? preferredTop
-      : clamp(fallbackTop, viewport.top + floatingUiMargin, viewport.bottom - panel.offsetHeight - floatingUiMargin);
-
-    panel.style.left = `${left}px`;
-    panel.style.top = `${top}px`;
-  }
-
   function updateFloatingUiPositions() {
     const anchor = state.activeFields?.anchorInput;
 
@@ -353,10 +341,6 @@
 
     if (!trigger.hidden) {
       positionTriggerNear(anchor);
-    }
-
-    if (!panel.hidden) {
-      positionPanelNear(anchor);
     }
   }
 
@@ -382,8 +366,10 @@
   }
 
   function hidePanel() {
+    backdrop.hidden = true;
     panel.hidden = true;
     keyInput.value = '';
+    keyWrap.hidden = true;
     feedback.className = 'angelshield-muted';
     feedback.textContent = '';
     closeDropdown(true);
@@ -398,6 +384,12 @@
     if (!panel.hidden) {
       scheduleFloatingUiUpdate();
     }
+  }
+
+  function updateFillButtonState() {
+    const hasSelectedRecord = Boolean(state.selectedRecordId);
+    const hasKey = keyInput.value.trim().length > 0;
+    fillButton.disabled = !hasSelectedRecord || (state.locked && !hasKey);
   }
 
   function renderRecordDropdown() {
@@ -456,11 +448,12 @@
         feedback.textContent = state.locked
           ? 'O cofre está trancado. Informe a key para usar esta senha sem destrancar o cofre.'
           : 'Cofre destrancado. Você já pode preencher.';
+        updateFillButtonState();
       });
       recordDropdown.appendChild(option);
     }
 
-    fillButton.disabled = false;
+    updateFillButtonState();
     recordDropdown.hidden = !state.isDropdownOpen;
     feedback.className = 'angelshield-muted';
     feedback.textContent = state.locked
@@ -497,6 +490,7 @@
       return;
     }
 
+    backdrop.hidden = false;
     panel.hidden = false;
     scheduleFloatingUiUpdate();
     loadRecords().catch((error) => {
@@ -526,6 +520,7 @@
       if (!key.trim()) {
         feedback.className = 'angelshield-error';
         feedback.textContent = 'Informe a key para descriptografar esta senha.';
+        updateFillButtonState();
         return;
       }
 
@@ -683,6 +678,10 @@
     renderRecordDropdown();
   });
 
+  keyInput.addEventListener('input', () => {
+    updateFillButtonState();
+  });
+
   recordInput.addEventListener('keydown', (event) => {
     const visibleRecords = getFilteredRecords();
 
@@ -735,6 +734,10 @@
 
   openButton.addEventListener('click', () => {
     sendMessage('OPEN_MANAGER_PAGE').catch(() => {});
+  });
+
+  backdrop.addEventListener('click', () => {
+    hidePanel();
   });
 
   document.addEventListener('keydown', (event) => {

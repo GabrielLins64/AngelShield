@@ -1,6 +1,6 @@
 .angelshield-trigger {
   position: fixed;
-  z-index: 2147483646;
+  z-index: 2147483645;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -22,7 +22,16 @@
   object-fit: contain;
 }
 
+.angelshield-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483646;
+  background: rgba(3, 7, 14, 0.62);
+  backdrop-filter: blur(8px);
+}
+
 .angelshield-trigger[hidden],
+.angelshield-backdrop[hidden],
 .angelshield-panel[hidden],
 .angelshield-combobox-dropdown[hidden] {
   display: none !important;
@@ -31,7 +40,12 @@
 .angelshield-panel {
   position: fixed;
   z-index: 2147483647;
-  width: min(360px, calc(100vw - 24px));
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(420px, calc(100vw - 24px));
+  max-height: calc(100vh - 32px);
+  overflow: visible;
   padding: 16px;
   border-radius: 18px;
   border: 1px solid rgba(116, 167, 255, 0.18);
@@ -93,6 +107,7 @@
 
 .angelshield-combobox {
   position: relative;
+  z-index: 2;
 }
 
 .angelshield-combobox-input {
@@ -108,6 +123,7 @@
   top: calc(100% + 8px);
   left: 0;
   right: 0;
+  z-index: 30;
   max-height: 220px;
   overflow-y: auto;
   border-radius: 14px;
@@ -167,16 +183,35 @@
   padding: 10px 14px;
   cursor: pointer;
   font: 700 13px/1 "IBM Plex Sans", "Segoe UI", sans-serif;
+  transition: transform 150ms ease, box-shadow 150ms ease, opacity 150ms ease;
 }
 
 .angelshield-panel .angelshield-primary {
   background: linear-gradient(135deg, #245dbe, #163f8f);
   color: #f7fbff;
+  box-shadow: 0 14px 32px rgba(22, 63, 143, 0.35);
 }
 
 .angelshield-panel .angelshield-secondary {
   background: rgba(116, 167, 255, 0.12);
   color: #f3f8ff;
+  border: 1px solid rgba(116, 167, 255, 0.14);
+}
+
+.angelshield-panel button:not(:disabled):hover {
+  box-shadow:
+    0 0 16px rgba(15, 56, 131, 0.774),
+    inset 0 1px 0 rgb(58, 106, 146);
+}
+
+.angelshield-panel button:not(:disabled):active {
+  transform: translateY(0);
+}
+
+.angelshield-panel button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  box-shadow: none;
 }
 
 .angelshield-panel .angelshield-muted {
