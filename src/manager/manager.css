@@ -418,9 +418,10 @@ select:focus {
 
 .toast {
   position: fixed;
-  right: 18px;
+  left: 50%;
   bottom: 18px;
-  z-index: 30;
+  transform: translateX(-50%);
+  z-index: 10000;
   max-width: min(420px, calc(100vw - 36px));
   padding: 14px 18px;
   border-radius: 16px;

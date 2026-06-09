@@ -76,6 +76,7 @@
   }
 
   function showToast(message, tone = 'default') {
+    syncToastHost();
     window.clearTimeout(showToast.timeoutId);
     elements.toast.textContent = message;
     elements.toast.className = `toast ${tone === 'error' ? 'error' : ''}`.trim();
@@ -88,6 +89,30 @@
   function closeDialog(dialog) {
     if (dialog.open) {
       dialog.close();
+    }
+  }
+
+  function getToastHost() {
+    const dialogHosts = [
+      elements.recordDialog,
+      elements.settingsDialog,
+      elements.unlockDialog,
+    ];
+
+    for (let index = dialogHosts.length - 1; index >= 0; index -= 1) {
+      if (dialogHosts[index].open) {
+        return dialogHosts[index];
+      }
+    }
+
+    return document.body;
+  }
+
+  function syncToastHost() {
+    const host = getToastHost();
+
+    if (elements.toast.parentElement !== host) {
+      host.appendChild(elements.toast);
     }
   }
 
@@ -117,11 +142,13 @@
     }
 
     elements.recordDialog.showModal();
+    syncToastHost();
     elements.identifierInput.focus();
   }
 
   function openSettingsDialog() {
     elements.settingsDialog.showModal();
+    syncToastHost();
     elements.globalSaltInput.focus();
   }
 
@@ -283,6 +310,7 @@
     elements.unlockConfirmButton.textContent = options.confirmLabel || 'Confirmar';
     elements.unlockKeyInput.value = '';
     elements.unlockDialog.showModal();
+    syncToastHost();
     elements.unlockKeyInput.focus();
 
     return new Promise((resolve, reject) => {
@@ -491,10 +519,14 @@
     });
 
     elements.recordDialog.addEventListener('close', () => {
+      syncToastHost();
       if (!elements.recordDialog.open) {
         resetRecordForm();
       }
     });
+
+    elements.settingsDialog.addEventListener('close', syncToastHost);
+    elements.unlockDialog.addEventListener('close', syncToastHost);
   }
 
   async function init() {

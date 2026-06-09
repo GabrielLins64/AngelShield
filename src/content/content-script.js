@@ -537,11 +537,7 @@
         setNativeValue(state.activeFields.passwordInput, secret.password || '');
       }
 
-      feedback.className = 'angelshield-muted';
-      feedback.textContent = `Credenciais de "${secret.identifier}" preenchidas sem destrancar o cofre.`;
-      window.setTimeout(() => {
-        hidePanel();
-      }, 900);
+      hidePanel();
       return;
     }
 
@@ -557,11 +553,7 @@
       setNativeValue(state.activeFields.passwordInput, secret.password || '');
     }
 
-    feedback.className = 'angelshield-muted';
-    feedback.textContent = `Credenciais de "${secret.identifier}" preenchidas.`;
-    window.setTimeout(() => {
-      hidePanel();
-    }, 900);
+    hidePanel();
   }
 
   function maybeShowForTarget(target) {
