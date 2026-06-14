@@ -10,8 +10,10 @@
     selectedRecordId: '',
   };
   const floatingUiMargin = 8;
+  const triggerRenderDelaysMs = [500, 1000, 1500];
   let floatingUiUpdateFrame = 0;
   let observedAnchorInput = null;
+  let triggerShowTimeoutIds = [];
 
   const trigger = document.createElement('button');
   trigger.className = 'angelshield-trigger';
@@ -76,6 +78,32 @@
     floatingUiUpdateFrame = requestAnimationFrame(() => {
       floatingUiUpdateFrame = 0;
       updateFloatingUiPositions();
+    });
+  }
+
+  function clearTriggerShowTimeout() {
+    triggerShowTimeoutIds.forEach((timeoutId) => {
+      window.clearTimeout(timeoutId);
+    });
+    triggerShowTimeoutIds = [];
+  }
+
+  function showTriggerWithDelay() {
+    clearTriggerShowTimeout();
+    trigger.hidden = true;
+
+    triggerShowTimeoutIds = triggerRenderDelaysMs.map((delayMs, index) => {
+      return window.setTimeout(() => {
+        if (!state.activeFields?.anchorInput || panel.hidden === false) {
+          return;
+        }
+
+        if (index === 0) {
+          trigger.hidden = false;
+        }
+
+        scheduleFloatingUiUpdate();
+      }, delayMs);
     });
   }
 
@@ -361,9 +389,15 @@
   }
 
   function showTriggerFor(fields) {
+    const shouldDelayShow = trigger.hidden;
     state.activeFields = fields;
     observeActiveAnchor(fields.anchorInput);
-    trigger.hidden = false;
+
+    if (shouldDelayShow) {
+      showTriggerWithDelay();
+      return;
+    }
+
     scheduleFloatingUiUpdate();
   }
 
@@ -392,6 +426,7 @@
   }
 
   function hideAll() {
+    clearTriggerShowTimeout();
     trigger.hidden = true;
     hidePanel();
   }
