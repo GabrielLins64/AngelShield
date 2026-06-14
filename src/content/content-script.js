@@ -291,6 +291,50 @@
     };
   }
 
+  function isFocusableSubmitControl(element) {
+    if (!(element instanceof HTMLElement) || !isVisible(element)) {
+      return false;
+    }
+
+    if (element instanceof HTMLButtonElement) {
+      const type = (element.getAttribute('type') || 'submit').toLowerCase();
+      return type === 'submit' && !element.disabled;
+    }
+
+    if (element instanceof HTMLInputElement) {
+      return ['submit', 'button'].includes((element.type || '').toLowerCase()) && !element.disabled;
+    }
+
+    return false;
+  }
+
+  function findSubmitControl(fields) {
+    const scope = fields.passwordInput?.form
+      || fields.usernameInput?.form
+      || fields.anchorInput?.form
+      || fields.passwordInput?.closest('form, section, article, div')
+      || fields.usernameInput?.closest('form, section, article, div')
+      || fields.anchorInput?.closest('form, section, article, div')
+      || document;
+
+    const controls = Array.from(scope.querySelectorAll('button, input'))
+      .filter((element) => !isExtensionElement(element))
+      .filter(isFocusableSubmitControl);
+
+    return controls[0] || null;
+  }
+
+  function focusSubmitControl(fields) {
+    const submitControl = findSubmitControl(fields);
+    if (!submitControl) {
+      return;
+    }
+
+    requestAnimationFrame(() => {
+      submitControl.focus({ preventScroll: true });
+    });
+  }
+
   function formatRecordLabel(record) {
     return `${record.identifier}${record.username ? ` (${record.username})` : ''}`;
   }
@@ -617,6 +661,7 @@
         setNativeValue(state.activeFields.passwordInput, secret.password || '');
       }
 
+      focusSubmitControl(state.activeFields);
       hidePanel();
       return;
     }
@@ -633,6 +678,7 @@
       setNativeValue(state.activeFields.passwordInput, secret.password || '');
     }
 
+    focusSubmitControl(state.activeFields);
     hidePanel();
   }
 
