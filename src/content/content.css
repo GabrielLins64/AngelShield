@@ -231,3 +231,8 @@
   color: #ff97a4;
   font-size: 12px;
 }
+
+#angelshield-fill-button:focus-visible {
+  outline: 2px solid rgba(116, 167, 255, 0.62);
+  outline-offset: 2px;
+}
