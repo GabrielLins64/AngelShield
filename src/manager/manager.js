@@ -1,6 +1,8 @@
 (function bootstrapManager() {
   const state = {
+    currentPage: 1,
     locked: true,
+    pageSize: '10',
     pendingKeyRejecter: null,
     pendingKeyResolver: null,
     records: [],
@@ -23,6 +25,12 @@
     openRecordModalButton: document.getElementById('open-record-modal-button'),
     openSettingsModalButton: document.getElementById('open-settings-modal-button'),
     passwordInput: document.getElementById('password-input'),
+    paginationBar: document.getElementById('pagination-bar'),
+    paginationMeta: document.getElementById('pagination-meta'),
+    paginationNextButton: document.getElementById('pagination-next-button'),
+    paginationPageLabel: document.getElementById('pagination-page-label'),
+    paginationPrevButton: document.getElementById('pagination-prev-button'),
+    pageSizeSelect: document.getElementById('page-size-select'),
     recordCountLabel: document.getElementById('record-count-label'),
     recordDialog: document.getElementById('record-dialog'),
     recordForm: document.getElementById('record-form'),
@@ -166,12 +174,44 @@
     });
   }
 
+  function getPageSizeLimit() {
+    return state.pageSize === 'all' ? Number.POSITIVE_INFINITY : Number.parseInt(state.pageSize, 10) || 10;
+  }
+
+  function getPaginationState(records) {
+    const totalItems = records.length;
+    const pageSizeLimit = getPageSizeLimit();
+    const totalPages = pageSizeLimit === Number.POSITIVE_INFINITY
+      ? 1
+      : Math.max(1, Math.ceil(totalItems / pageSizeLimit));
+    const currentPage = Math.min(Math.max(state.currentPage, 1), totalPages);
+    const startIndex = pageSizeLimit === Number.POSITIVE_INFINITY ? 0 : (currentPage - 1) * pageSizeLimit;
+    const endIndex = pageSizeLimit === Number.POSITIVE_INFINITY
+      ? totalItems
+      : Math.min(startIndex + pageSizeLimit, totalItems);
+
+    state.currentPage = currentPage;
+
+    return {
+      currentPage,
+      endIndex,
+      pageRecords: records.slice(startIndex, endIndex),
+      pageSizeLimit,
+      shouldPaginate: totalItems > 10,
+      startIndex,
+      totalItems,
+      totalPages,
+    };
+  }
+
   function renderVaultFab() {
     const label = state.locked ? 'Destrancar' : 'Trancar';
+    const labelWithShortcut = `${label} (Ctrl+L)`;
     elements.vaultFab.innerHTML = state.locked ? getClosedLockIcon() : getOpenLockIcon();
     elements.vaultFab.setAttribute('aria-label', label);
-    elements.vaultFab.setAttribute('title', label);
-    elements.vaultFab.setAttribute('data-tooltip', label);
+    elements.vaultFab.setAttribute('title', labelWithShortcut);
+    elements.vaultFab.setAttribute('data-tooltip', labelWithShortcut);
+    elements.vaultFab.setAttribute('aria-keyshortcuts', 'Control+L');
   }
 
   function renderStatus() {
@@ -190,15 +230,37 @@
     return button;
   }
 
+  function renderPagination(pagination) {
+    elements.pageSizeSelect.value = state.pageSize;
+
+    if (!pagination.shouldPaginate) {
+      elements.paginationBar.hidden = true;
+      return;
+    }
+
+    elements.paginationBar.hidden = false;
+    elements.paginationMeta.textContent = `Mostrando ${pagination.startIndex + 1}-${pagination.endIndex} de ${pagination.totalItems}`;
+    elements.paginationPageLabel.textContent = `Página ${pagination.currentPage} de ${pagination.totalPages}`;
+    elements.paginationPrevButton.disabled = pagination.currentPage <= 1;
+    elements.paginationNextButton.disabled = pagination.currentPage >= pagination.totalPages;
+
+    if (pagination.pageSizeLimit === Number.POSITIVE_INFINITY) {
+      elements.paginationPageLabel.textContent = 'Todos os registros';
+    }
+  }
+
   function renderRecords() {
     const filteredRecords = getFilteredRecords();
+    const pagination = getPaginationState(filteredRecords);
     elements.recordsList.innerHTML = '';
     elements.recordsEmptyState.hidden = filteredRecords.length > 0;
     elements.recordsEmptyState.textContent = state.searchQuery.trim()
       ? 'Nenhum registro corresponde à busca.'
       : 'Nenhum registro salvo ainda. Clique em "Novo registro" para começar.';
 
-    for (const record of filteredRecords) {
+    renderPagination(pagination);
+
+    for (const record of pagination.pageRecords) {
       const card = document.createElement('article');
       card.className = 'record-card';
 
@@ -451,6 +513,34 @@
     await refreshDashboard();
   }
 
+  function isEditableTarget(target) {
+    if (!(target instanceof HTMLElement)) {
+      return false;
+    }
+
+    return target.isContentEditable
+      || target instanceof HTMLInputElement
+      || target instanceof HTMLTextAreaElement
+      || target instanceof HTMLSelectElement;
+  }
+
+  function handleManagerShortcut(event) {
+    if (event.defaultPrevented || event.repeat || event.metaKey || event.altKey || event.shiftKey) {
+      return;
+    }
+
+    if (!event.ctrlKey || event.key.toLowerCase() !== 'l') {
+      return;
+    }
+
+    if (isEditableTarget(event.target)) {
+      return;
+    }
+
+    event.preventDefault();
+    handleVaultFabClick().catch((error) => showToast(error.message, 'error'));
+  }
+
   function wireEvents() {
     elements.openRecordModalButton.addEventListener('click', () => openRecordDialog());
     elements.openSettingsModalButton.addEventListener('click', openSettingsDialog);
@@ -463,6 +553,27 @@
 
     elements.recordSearchInput.addEventListener('input', (event) => {
       state.searchQuery = event.target.value || '';
+      state.currentPage = 1;
+      renderRecords();
+    });
+
+    elements.pageSizeSelect.addEventListener('change', (event) => {
+      state.pageSize = event.target.value || '10';
+      state.currentPage = 1;
+      renderRecords();
+    });
+
+    elements.paginationPrevButton.addEventListener('click', () => {
+      if (state.currentPage <= 1) {
+        return;
+      }
+
+      state.currentPage -= 1;
+      renderRecords();
+    });
+
+    elements.paginationNextButton.addEventListener('click', () => {
+      state.currentPage += 1;
       renderRecords();
     });
 
@@ -527,6 +638,7 @@
 
     elements.settingsDialog.addEventListener('close', syncToastHost);
     elements.unlockDialog.addEventListener('close', syncToastHost);
+    document.addEventListener('keydown', handleManagerShortcut);
   }
 
   async function init() {

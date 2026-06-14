@@ -1,4 +1,5 @@
 (function bootstrapContentScript() {
+  const OPEN_AUTOFILL_PANEL_MESSAGE = 'OPEN_AUTOFILL_PANEL';
   const logoUrl = chrome.runtime.getURL('assets/as_logo-removebg.png');
   const state = {
     activeFields: null,
@@ -481,7 +482,16 @@
     renderRecordDropdown();
   }
 
-  function openPanel() {
+  function focusPanelSearch() {
+    requestAnimationFrame(() => {
+      if (!panel.hidden) {
+        recordInput.focus();
+        recordInput.select();
+      }
+    });
+  }
+
+  function openPanel({ focusInput = false } = {}) {
     if (!state.activeFields) {
       syncActiveFields();
     }
@@ -496,7 +506,27 @@
     loadRecords().catch((error) => {
       feedback.className = 'angelshield-error';
       feedback.textContent = error.message;
+    }).finally(() => {
+      if (focusInput) {
+        focusPanelSearch();
+      }
     });
+  }
+
+  function handleOpenPanelRequest() {
+    syncActiveFields();
+
+    if (!state.activeFields) {
+      return {
+        opened: false,
+        reason: 'Nenhum formulário de login visível foi encontrado nesta página.',
+      };
+    }
+
+    openPanel({ focusInput: true });
+    return {
+      opened: true,
+    };
   }
 
   function setNativeValue(element, value) {
@@ -736,6 +766,15 @@
     if (event.key === 'Escape' && !panel.hidden) {
       hidePanel();
     }
+  });
+
+  chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message?.type !== OPEN_AUTOFILL_PANEL_MESSAGE) {
+      return false;
+    }
+
+    sendResponse(handleOpenPanelRequest());
+    return false;
   });
 
   if (document.readyState === 'loading') {

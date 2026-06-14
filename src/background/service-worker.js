@@ -11,6 +11,8 @@ const {
   ensureString,
   scoreRecordMatch,
 } = AngelShieldShared;
+const OPEN_AUTOFILL_PANEL_COMMAND = 'open-autofill-panel';
+const OPEN_AUTOFILL_PANEL_MESSAGE = 'OPEN_AUTOFILL_PANEL';
 
 async function initializeStorage() {
   const existing = await chrome.storage.local.get([STORAGE_KEYS.records, STORAGE_KEYS.settings]);
@@ -447,6 +449,36 @@ async function openManagerPage() {
   };
 }
 
+async function openAutofillPanelInActiveTab() {
+  const [activeTab] = await chrome.tabs.query({
+    active: true,
+    currentWindow: true,
+  });
+
+  if (!activeTab?.id) {
+    return {
+      opened: false,
+      reason: 'Nenhuma aba ativa encontrada.',
+    };
+  }
+
+  try {
+    const response = await chrome.tabs.sendMessage(activeTab.id, {
+      type: OPEN_AUTOFILL_PANEL_MESSAGE,
+    });
+
+    return {
+      opened: Boolean(response?.opened),
+      reason: response?.reason,
+    };
+  } catch (error) {
+    return {
+      opened: false,
+      reason: error?.message || 'Não foi possível abrir o autopreenchimento nesta aba.',
+    };
+  }
+}
+
 async function handleMessage(message) {
   switch (message?.type) {
     case 'GET_DASHBOARD_DATA':
@@ -487,6 +519,12 @@ chrome.runtime.onStartup.addListener(() => {
 
 chrome.action.onClicked.addListener(() => {
   openManagerPage();
+});
+
+chrome.commands.onCommand.addListener((command) => {
+  if (command === OPEN_AUTOFILL_PANEL_COMMAND) {
+    openAutofillPanelInActiveTab();
+  }
 });
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {

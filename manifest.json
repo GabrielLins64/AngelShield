@@ -23,6 +23,14 @@
       "128": "assets/as_logo-removebg.png"
     }
   },
+  "commands": {
+    "open-autofill-panel": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+Y"
+      },
+      "description": "Abrir a caixa de autopreenchimento do AngelShield"
+    }
+  },
   "content_scripts": [
     {
       "matches": ["<all_urls>"],

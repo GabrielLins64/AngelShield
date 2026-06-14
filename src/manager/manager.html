@@ -46,6 +46,27 @@
           </div>
 
           <div id="records-list" class="records-list"></div>
+
+          <div id="pagination-bar" class="pagination-bar" hidden>
+            <div class="pagination-summary">
+              <label class="pagination-page-size" for="page-size-select">
+                <span>Mostrar</span>
+                <select id="page-size-select">
+                  <option value="10">10</option>
+                  <option value="50">50</option>
+                  <option value="100">100</option>
+                  <option value="all">Todos</option>
+                </select>
+              </label>
+              <span id="pagination-meta" class="pagination-meta"></span>
+            </div>
+
+            <div class="pagination-actions">
+              <button id="pagination-prev-button" class="button button-secondary" type="button">Anterior</button>
+              <span id="pagination-page-label" class="summary-pill"></span>
+              <button id="pagination-next-button" class="button button-secondary" type="button">Próxima</button>
+            </div>
+          </div>
         </section>
       </main>
     </div>

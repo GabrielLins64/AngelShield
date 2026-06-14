@@ -8,10 +8,13 @@ O AngelShield é uma extensão compatível com Chrome que mantém um cofre local
 
 - Cadastro, edição e remoção de registros com `identificador`, `usuário`, `link`, `senha` e `dica`.
 - Abertura de uma página de gerenciamento ao clicar no ícone da extensão.
+- Atalho `Ctrl+Shift+Y` para abrir a caixa de autopreenchimento na aba ativa.
+- Atalho `Ctrl+L` na página da extensão para acionar o fluxo de trancar ou destrancar o cofre.
 - Estado de `trancado` e `destrancado`, com a key guardada apenas em memória de sessão.
 - Preenchimento assistido em páginas com inputs de usuário e senha.
 - Cópia de usuário e senha pela tela da extensão.
 - Busca de registros por identificador ou usuário.
+- Paginação da lista de registros quando houver mais de 10 itens, com opção de exibir 10, 50, 100 ou todos.
 - Alteração do salt padrão com migração das senhas já armazenadas.
 - Exportação e importação de registros por CSV, com suporte a senha criptografada ou em texto puro.
 

@@ -26,6 +26,11 @@ angelshield/
 5. A extensão `AngelShield` aparecerá na lista e já poderá ser usada
 6. Clique no ícone da extensão para abrir a tela de gerenciamento
 
+## Atalhos
+
+- `Ctrl+Shift+Y`: abre a caixa de autopreenchimento do AngelShield na aba ativa, quando houver um formulário de login visível na página.
+- `Ctrl+L`: na página da extensão, aciona o controle do cofre para destrancar ou trancar, espelhando o botão flutuante.
+
 ### Fluxo de desenvolvimento
 
 Como a extensão é carregada sem compactação, qualquer alteração em arquivos como `manifest.json`, `src/background/*`, `src/content/*` ou `src/manager/*` exige recarregar a extensão na tela `chrome://extensions/`.
