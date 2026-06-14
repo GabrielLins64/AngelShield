@@ -223,6 +223,22 @@
     return null;
   }
 
+  function resolveAnchorInput(target, usernameInput, passwordInput) {
+    if (isCandidateUsernameInput(target)) {
+      return target;
+    }
+
+    if (usernameInput) {
+      return usernameInput;
+    }
+
+    if (target !== passwordInput && target instanceof HTMLInputElement) {
+      return target;
+    }
+
+    return passwordInput;
+  }
+
   function detectFieldGroup(target) {
     if (!(target instanceof HTMLInputElement)) {
       return null;
@@ -238,9 +254,7 @@
     }
 
     const usernameInput = isCandidateUsernameInput(target) ? target : findAssociatedUsername(passwordInput);
-    const anchorInput = isCandidateUsernameInput(target) || isCandidatePasswordInput(target)
-      ? target
-      : usernameInput || passwordInput || target;
+    const anchorInput = resolveAnchorInput(target, usernameInput, passwordInput);
 
     return {
       anchorInput,
@@ -306,8 +320,9 @@
     const viewport = getViewportBounds();
     const maxLeft = viewport.right - trigger.offsetWidth - floatingUiMargin;
     const maxTop = viewport.bottom - trigger.offsetHeight - floatingUiMargin;
+    const shouldAvoidRightEdge = anchor instanceof HTMLInputElement && anchor.type === 'password';
     const left = clamp(
-      rect.right - trigger.offsetWidth,
+      shouldAvoidRightEdge ? rect.left - trigger.offsetWidth - floatingUiMargin : rect.right - trigger.offsetWidth,
       viewport.left + floatingUiMargin,
       maxLeft,
     );
