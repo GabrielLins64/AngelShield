@@ -623,6 +623,31 @@
     };
   }
 
+  function isOpenAutofillPanelShortcut(event) {
+    return !event.defaultPrevented
+      && !event.repeat
+      && event.ctrlKey
+      && event.shiftKey
+      && !event.altKey
+      && !event.metaKey
+      && event.key.toLowerCase() === 'y';
+  }
+
+  function handleOpenAutofillPanelShortcut(event) {
+    if (!isOpenAutofillPanelShortcut(event)) {
+      return;
+    }
+
+    const result = handleOpenPanelRequest();
+
+    if (!result.opened) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+  }
+
   function setNativeValue(element, value) {
     const prototype = Object.getPrototypeOf(element);
     const descriptor = Object.getOwnPropertyDescriptor(prototype, 'value');
@@ -857,6 +882,8 @@
   backdrop.addEventListener('click', () => {
     hidePanel();
   });
+
+  document.addEventListener('keydown', handleOpenAutofillPanelShortcut, { capture: true });
 
   document.addEventListener('keydown', (event) => {
     if (event.key === 'Escape' && !panel.hidden) {
