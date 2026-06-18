@@ -41,6 +41,7 @@
 .angelshield-trigger[hidden],
 .angelshield-backdrop[hidden],
 .angelshield-panel[hidden],
+.angelshield-key-wrap[hidden],
 .angelshield-combobox-dropdown[hidden] {
   display: none !important;
 }
@@ -111,6 +112,31 @@
   outline: none;
   border-color: rgba(76, 161, 255, 0.62);
   box-shadow: 0 0 0 4px rgba(76, 161, 255, 0.14);
+}
+
+.angelshield-key-wrap {
+  display: grid;
+  gap: 8px;
+}
+
+.angelshield-checkbox-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: fit-content;
+  color: #d7e7fb;
+  cursor: pointer;
+  font: 600 13px/1.2 "IBM Plex Sans", "Segoe UI", sans-serif;
+}
+
+.angelshield-panel .angelshield-checkbox-row input {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  margin: 0;
+  padding: 0;
+  cursor: pointer;
+  accent-color: #245dbe;
 }
 
 .angelshield-combobox {

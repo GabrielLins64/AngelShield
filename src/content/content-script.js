@@ -45,8 +45,12 @@
         >
         <div id="angelshield-record-dropdown" class="angelshield-combobox-dropdown" hidden></div>
       </div>
-      <div id="angelshield-key-wrap" hidden>
+      <div id="angelshield-key-wrap" class="angelshield-key-wrap" hidden>
         <input id="angelshield-key-input" type="password" placeholder="Informe a key para usar esta senha">
+        <label class="angelshield-checkbox-row" for="angelshield-keep-open-checkbox">
+          <input id="angelshield-keep-open-checkbox" type="checkbox">
+          <span>Manter o cofre aberto</span>
+        </label>
       </div>
       <div id="angelshield-feedback" class="angelshield-muted"></div>
       <div class="angelshield-panel-actions">
@@ -66,6 +70,7 @@
   const recordDropdown = panel.querySelector('#angelshield-record-dropdown');
   const keyWrap = panel.querySelector('#angelshield-key-wrap');
   const keyInput = panel.querySelector('#angelshield-key-input');
+  const keepOpenCheckbox = panel.querySelector('#angelshield-keep-open-checkbox');
   const feedback = panel.querySelector('#angelshield-feedback');
   const fillButton = panel.querySelector('#angelshield-fill-button');
   const openButton = panel.querySelector('#angelshield-open-button');
@@ -463,6 +468,7 @@
     backdrop.hidden = true;
     panel.hidden = true;
     keyInput.value = '';
+    keepOpenCheckbox.checked = false;
     keyWrap.hidden = true;
     feedback.className = 'angelshield-muted';
     feedback.textContent = '';
@@ -541,7 +547,7 @@
         recordDropdown.innerHTML = '';
         feedback.className = 'angelshield-muted';
         feedback.textContent = state.locked
-          ? 'O cofre está trancado. Informe a key para usar esta senha sem destrancar o cofre.'
+          ? 'O cofre está trancado. Informe a key para usar esta senha.'
           : 'Cofre destrancado. Você já pode preencher.';
         updateFillButtonState();
       });
@@ -552,7 +558,7 @@
     recordDropdown.hidden = !state.isDropdownOpen;
     feedback.className = 'angelshield-muted';
     feedback.textContent = state.locked
-      ? 'O cofre está trancado. Informe a key para usar esta senha sem destrancar o cofre.'
+      ? 'O cofre está trancado. Informe a key para usar esta senha.'
       : 'Cofre destrancado. Você já pode preencher.';
 
     schedulePanelPositionUpdate();
@@ -570,6 +576,7 @@
     keyWrap.hidden = !state.locked;
     feedback.className = 'angelshield-muted';
     keyInput.value = '';
+    keepOpenCheckbox.checked = false;
 
     const selectedRecord = getSelectedRecord();
     recordInput.value = selectedRecord ? formatRecordLabel(selectedRecord) : '';
@@ -656,6 +663,16 @@
     element.dispatchEvent(new Event('change', { bubbles: true }));
   }
 
+  function fillActiveFields(secret) {
+    if (state.activeFields?.usernameInput) {
+      setNativeValue(state.activeFields.usernameInput, secret.username || '');
+    }
+
+    if (state.activeFields?.passwordInput) {
+      setNativeValue(state.activeFields.passwordInput, secret.password || '');
+    }
+  }
+
   async function fillSelectedRecord() {
     const recordId = state.selectedRecordId;
     if (!recordId) {
@@ -678,12 +695,13 @@
         key,
       });
 
-      if (state.activeFields?.usernameInput) {
-        setNativeValue(state.activeFields.usernameInput, secret.username || '');
-      }
+      fillActiveFields(secret);
 
-      if (state.activeFields?.passwordInput) {
-        setNativeValue(state.activeFields.passwordInput, secret.password || '');
+      if (keepOpenCheckbox.checked) {
+        await sendMessage('UNLOCK_VAULT', {
+          key,
+        });
+        state.locked = false;
       }
 
       focusSubmitControl(state.activeFields);
@@ -695,13 +713,7 @@
       id: recordId,
     });
 
-    if (state.activeFields?.usernameInput) {
-      setNativeValue(state.activeFields.usernameInput, secret.username || '');
-    }
-
-    if (state.activeFields?.passwordInput) {
-      setNativeValue(state.activeFields.passwordInput, secret.password || '');
-    }
+    fillActiveFields(secret);
 
     focusSubmitControl(state.activeFields);
     hidePanel();
