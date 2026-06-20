@@ -227,14 +227,110 @@
     return element instanceof HTMLInputElement && element.type === 'password' && isVisible(element);
   }
 
+  function getFieldScopes(element) {
+    const scopes = [];
+    const seen = new Set();
+
+    function appendScope(scope) {
+      if (!scope || seen.has(scope)) {
+        return;
+      }
+
+      seen.add(scope);
+      scopes.push(scope);
+    }
+
+    appendScope(element.form);
+    appendScope(element.closest('form'));
+
+    let current = element.parentElement;
+    while (current) {
+      if (current.matches('form, section, article, div')) {
+        appendScope(current);
+      }
+
+      current = current.parentElement;
+    }
+
+    appendScope(document);
+
+    return scopes;
+  }
+
+  function getHintText(element) {
+    const labelText = Array.from(element.labels || [])
+      .map((label) => label.textContent || '')
+      .join(' ');
+
+    return [
+      element.id,
+      element.name,
+      element.getAttribute('autocomplete'),
+      element.getAttribute('placeholder'),
+      element.getAttribute('aria-label'),
+      element.dataset?.name,
+      labelText,
+    ]
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase();
+  }
+
+  function getDistanceScore(referenceInput, candidateInput) {
+    const referenceRect = referenceInput.getBoundingClientRect();
+    const candidateRect = candidateInput.getBoundingClientRect();
+    const verticalDistance = Math.abs(referenceRect.top - candidateRect.top);
+    const horizontalDistance = Math.abs(referenceRect.left - candidateRect.left);
+
+    let score = 0;
+    score -= verticalDistance * 0.4;
+    score -= horizontalDistance * 0.08;
+
+    if (candidateRect.top <= referenceRect.top + 40) {
+      score += 20;
+    }
+
+    if (candidateRect.top < referenceRect.top) {
+      score += 20;
+    }
+
+    if (Math.abs(candidateRect.left - referenceRect.left) <= 80) {
+      score += 10;
+    }
+
+    return score;
+  }
+
+  function findBestMatchingInput(candidates, scoreCandidate) {
+    let bestCandidate = null;
+    let bestScore = Number.NEGATIVE_INFINITY;
+
+    for (const candidate of candidates) {
+      const score = scoreCandidate(candidate);
+      if (score > bestScore) {
+        bestScore = score;
+        bestCandidate = candidate;
+      }
+    }
+
+    return bestCandidate;
+  }
+
   function findAssociatedPassword(target) {
     if (isCandidatePasswordInput(target)) {
       return target;
     }
 
-    const scope = target.form || target.closest('form') || target.closest('section, article, div') || document;
-    const passwordInputs = Array.from(scope.querySelectorAll('input[type="password"]')).filter(isVisible);
-    return passwordInputs[0] || null;
+    for (const scope of getFieldScopes(target)) {
+      const passwordInputs = Array.from(scope.querySelectorAll('input[type="password"]')).filter(isVisible);
+      if (passwordInputs.length === 0) {
+        continue;
+      }
+
+      return findBestMatchingInput(passwordInputs, (input) => getDistanceScore(target, input));
+    }
+
+    return null;
   }
 
   function findAssociatedUsername(passwordInput) {
@@ -242,15 +338,37 @@
       return null;
     }
 
-    const scope = passwordInput.form || passwordInput.closest('form') || passwordInput.closest('section, article, div') || document;
-    const inputs = Array.from(scope.querySelectorAll('input')).filter(isCandidateUsernameInput);
+    for (const scope of getFieldScopes(passwordInput)) {
+      const inputs = Array.from(scope.querySelectorAll('input'))
+        .filter((input) => input !== passwordInput)
+        .filter(isCandidateUsernameInput);
 
-    for (const input of inputs) {
-      const inputRect = input.getBoundingClientRect();
-      const passwordRect = passwordInput.getBoundingClientRect();
-      if (input !== passwordInput && inputRect.top <= passwordRect.bottom + 80) {
-        return input;
+      if (inputs.length === 0) {
+        continue;
       }
+
+      return findBestMatchingInput(inputs, (input) => {
+        const hints = getHintText(input);
+        let score = getDistanceScore(passwordInput, input);
+
+        if (hints.includes('username')) {
+          score += 120;
+        }
+
+        if (hints.includes('email')) {
+          score += 60;
+        }
+
+        if (hints.includes('user') || hints.includes('login') || hints.includes('usuario') || hints.includes('usuário')) {
+          score += 50;
+        }
+
+        if (hints.includes('account') || hints.includes('conta')) {
+          score += 25;
+        }
+
+        return score;
+      });
     }
 
     return null;
@@ -313,20 +431,44 @@
     return false;
   }
 
+  function getFieldGroupScopes(fields) {
+    const scopes = [];
+    const seen = new Set();
+
+    function appendScope(scope) {
+      if (!scope || seen.has(scope)) {
+        return;
+      }
+
+      seen.add(scope);
+      scopes.push(scope);
+    }
+
+    [fields.passwordInput, fields.usernameInput, fields.anchorInput].forEach((input) => {
+      if (!(input instanceof HTMLInputElement)) {
+        return;
+      }
+
+      getFieldScopes(input).forEach(appendScope);
+    });
+
+    appendScope(document);
+
+    return scopes;
+  }
+
   function findSubmitControl(fields) {
-    const scope = fields.passwordInput?.form
-      || fields.usernameInput?.form
-      || fields.anchorInput?.form
-      || fields.passwordInput?.closest('form, section, article, div')
-      || fields.usernameInput?.closest('form, section, article, div')
-      || fields.anchorInput?.closest('form, section, article, div')
-      || document;
+    for (const scope of getFieldGroupScopes(fields)) {
+      const controls = Array.from(scope.querySelectorAll('button, input'))
+        .filter((element) => !isExtensionElement(element))
+        .filter(isFocusableSubmitControl);
 
-    const controls = Array.from(scope.querySelectorAll('button, input'))
-      .filter((element) => !isExtensionElement(element))
-      .filter(isFocusableSubmitControl);
+      if (controls.length > 0) {
+        return controls[0];
+      }
+    }
 
-    return controls[0] || null;
+    return null;
   }
 
   function focusSubmitControl(fields) {
