@@ -1,3 +1,10 @@
+.angelshield-panel,
+.angelshield-panel *,
+.angelshield-trigger,
+.angelshield-trigger * {
+  box-sizing: border-box;
+}
+
 .angelshield-trigger {
   position: fixed;
   z-index: 2147483645;
@@ -96,15 +103,19 @@
   display: grid;
   gap: 12px;
   margin-top: 14px;
+  min-width: 0;
 }
 
 .angelshield-panel input {
+  display: block;
   width: 100%;
+  max-width: 100%;
+  min-width: 0;
   padding: 10px 12px;
   border: 1px solid rgba(116, 167, 255, 0.16);
   border-radius: 12px;
   background: rgba(5, 12, 22, 0.72);
-  color: inherit;
+  /* color: inherit; */
   font: inherit;
 }
 
@@ -117,9 +128,12 @@
 .angelshield-key-wrap {
   display: grid;
   gap: 8px;
+  min-width: 0;
 }
 
 .angelshield-checkbox-row {
+  margin-left: 5px;
+  margin-top: 5px;
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -142,6 +156,7 @@
 .angelshield-combobox {
   position: relative;
   z-index: 2;
+  min-width: 0;
 }
 
 .angelshield-combobox-input {
@@ -150,6 +165,17 @@
   background-position: calc(100% - 18px) calc(50% - 2px), calc(100% - 12px) calc(50% - 2px);
   background-size: 6px 6px, 6px 6px;
   background-repeat: no-repeat;
+}
+
+.angelshield-combobox-input, #angelshield-key-input {
+  background-color: rgba(5, 12, 22, 0.72) !important;
+  border: 2px solid rgba(116, 167, 255, 0.16) !important;
+  color: #f3f8ff !important;
+}
+
+.angelshield-combobox-input::selection, #angelshield-key-input::selection {
+  background-color: rgba(46, 88, 148, 0.842) !important;
+  color: rgba(210, 225, 247, 0.842) !important;
 }
 
 .angelshield-combobox-dropdown {
