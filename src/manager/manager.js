@@ -1,4 +1,5 @@
 (function bootstrapManager() {
+  const RECORD_PREFILL_PARAM = 'recordPrefill';
   const state = {
     currentPage: 1,
     locked: true,
@@ -131,6 +132,15 @@
     elements.passwordInput.placeholder = 'Nova senha ou deixe em branco para manter a atual';
   }
 
+  function populateRecordPrefillForm(prefill) {
+    resetRecordForm();
+    elements.identifierInput.value = prefill.identifier || '';
+    elements.usernameInput.value = prefill.username || '';
+    elements.linkInput.value = prefill.link || '';
+    elements.hintInput.value = prefill.hint || '';
+    elements.passwordInput.value = prefill.plainPassword || '';
+  }
+
   function populateRecordForm(record) {
     elements.recordIdInput.value = record.id;
     elements.identifierInput.value = record.identifier;
@@ -142,9 +152,11 @@
     elements.formTitle.textContent = `Editando: ${record.identifier}`;
   }
 
-  function openRecordDialog(record = null) {
+  function openRecordDialog(record = null, options = {}) {
     if (record) {
       populateRecordForm(record);
+    } else if (options.prefill) {
+      populateRecordPrefillForm(options.prefill);
     } else {
       resetRecordForm();
     }
@@ -513,6 +525,37 @@
     await refreshDashboard();
   }
 
+  function getRecordPrefillTokenFromUrl() {
+    const searchParams = new URLSearchParams(window.location.search);
+    return searchParams.get(RECORD_PREFILL_PARAM) || '';
+  }
+
+  function clearRecordPrefillTokenFromUrl() {
+    const url = new URL(window.location.href);
+    if (!url.searchParams.has(RECORD_PREFILL_PARAM)) {
+      return;
+    }
+
+    url.searchParams.delete(RECORD_PREFILL_PARAM);
+    window.history.replaceState(null, document.title, `${url.pathname}${url.search}${url.hash}`);
+  }
+
+  async function openInitialRecordPrefill() {
+    const token = getRecordPrefillTokenFromUrl();
+    if (!token) {
+      return;
+    }
+
+    try {
+      const data = await sendMessage('CONSUME_RECORD_PREFILL', { token });
+      if (data?.record) {
+        openRecordDialog(null, { prefill: data.record });
+      }
+    } finally {
+      clearRecordPrefillTokenFromUrl();
+    }
+  }
+
   function isEditableTarget(target) {
     if (!(target instanceof HTMLElement)) {
       return false;
@@ -645,6 +688,7 @@
     wireEvents();
     resetRecordForm();
     await refreshDashboard();
+    await openInitialRecordPrefill();
   }
 
   init().catch((error) => showToast(error.message, 'error'));

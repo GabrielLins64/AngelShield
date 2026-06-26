@@ -55,6 +55,7 @@
       <div id="angelshield-feedback" class="angelshield-muted"></div>
       <div class="angelshield-panel-actions">
         <button id="angelshield-fill-button" class="angelshield-primary" type="button">Preencher</button>
+        <button id="angelshield-new-password-button" class="angelshield-secondary" type="button">Nova senha</button>
         <button id="angelshield-open-button" class="angelshield-secondary" type="button">Abrir cofre</button>
       </div>
     </div>
@@ -73,6 +74,7 @@
   const keepOpenCheckbox = panel.querySelector('#angelshield-keep-open-checkbox');
   const feedback = panel.querySelector('#angelshield-feedback');
   const fillButton = panel.querySelector('#angelshield-fill-button');
+  const newPasswordButton = panel.querySelector('#angelshield-new-password-button');
   const openButton = panel.querySelector('#angelshield-open-button');
 
   function scheduleFloatingUiUpdate() {
@@ -815,6 +817,43 @@
     }
   }
 
+  function getPageTitleForRecord() {
+    const normalizedTitle = (document.title || '').replace(/\s+/g, ' ').trim();
+    if (normalizedTitle) {
+      return normalizedTitle;
+    }
+
+    try {
+      return new URL(window.location.href).hostname;
+    } catch (error) {
+      return window.location.href;
+    }
+  }
+
+  function getInputValue(input) {
+    return input instanceof HTMLInputElement ? input.value : '';
+  }
+
+  function buildNewPasswordDraft() {
+    if (!state.activeFields) {
+      syncActiveFields();
+    }
+
+    return {
+      identifier: getPageTitleForRecord(),
+      link: window.location.href,
+      username: getInputValue(state.activeFields?.usernameInput),
+      plainPassword: getInputValue(state.activeFields?.passwordInput),
+    };
+  }
+
+  async function openNewPasswordForm() {
+    await sendMessage('OPEN_MANAGER_PAGE', {
+      recordPrefill: buildNewPasswordDraft(),
+    });
+    hidePanel();
+  }
+
   async function fillSelectedRecord() {
     const recordId = state.selectedRecordId;
     if (!recordId) {
@@ -1031,6 +1070,13 @@
 
   openButton.addEventListener('click', () => {
     sendMessage('OPEN_MANAGER_PAGE').catch(() => {});
+  });
+
+  newPasswordButton.addEventListener('click', () => {
+    openNewPasswordForm().catch((error) => {
+      feedback.className = 'angelshield-error';
+      feedback.textContent = error.message;
+    });
   });
 
   backdrop.addEventListener('click', () => {

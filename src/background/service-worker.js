@@ -13,6 +13,9 @@ const {
 } = AngelShieldShared;
 const OPEN_AUTOFILL_PANEL_COMMAND = 'open-autofill-panel';
 const OPEN_AUTOFILL_PANEL_MESSAGE = 'OPEN_AUTOFILL_PANEL';
+const RECORD_PREFILL_PARAM = 'recordPrefill';
+const RECORD_PREFILL_STORAGE_PREFIX = 'angelshield.recordPrefill.';
+const RECORD_PREFILL_TTL_MS = 5 * 60 * 1000;
 
 async function initializeStorage() {
   const existing = await chrome.storage.local.get([STORAGE_KEYS.records, STORAGE_KEYS.settings]);
@@ -101,6 +104,84 @@ async function resolveCryptoKey(keyOverride) {
   }
 
   return requireVaultKey();
+}
+
+function createRecordPrefillToken() {
+  if (self.crypto && typeof self.crypto.randomUUID === 'function') {
+    return self.crypto.randomUUID();
+  }
+
+  return `prefill_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+}
+
+function getRecordPrefillStorageKey(token) {
+  return `${RECORD_PREFILL_STORAGE_PREFIX}${ensureString(token)}`;
+}
+
+function normalizeRecordPrefill(prefill) {
+  const incoming = prefill || {};
+  const normalized = {
+    identifier: ensureString(incoming.identifier).replace(/\s+/g, ' ').trim(),
+    username: ensureString(incoming.username),
+    link: ensureString(incoming.link).trim(),
+    hint: ensureString(incoming.hint),
+    plainPassword: ensureString(incoming.plainPassword),
+  };
+
+  if (!normalized.identifier && normalized.link) {
+    try {
+      normalized.identifier = new URL(normalized.link).hostname;
+    } catch (error) {
+      normalized.identifier = normalized.link;
+    }
+  }
+
+  return normalized;
+}
+
+async function storeRecordPrefill(prefill) {
+  const token = createRecordPrefillToken();
+  const storageKey = getRecordPrefillStorageKey(token);
+  const expiresAt = Date.now() + RECORD_PREFILL_TTL_MS;
+
+  await chrome.storage.session.set({
+    [storageKey]: {
+      ...normalizeRecordPrefill(prefill),
+      expiresAt,
+    },
+  });
+
+  setTimeout(() => {
+    chrome.storage.session.remove(storageKey).catch(() => {});
+  }, RECORD_PREFILL_TTL_MS);
+
+  return token;
+}
+
+async function consumeRecordPrefill(token) {
+  const normalizedToken = ensureString(token);
+  if (!normalizedToken) {
+    return {
+      record: null,
+    };
+  }
+
+  const storageKey = getRecordPrefillStorageKey(normalizedToken);
+  const result = await chrome.storage.session.get(storageKey);
+  const prefill = result[storageKey] || null;
+
+  await chrome.storage.session.remove(storageKey);
+
+  const expiresAt = Number(prefill?.expiresAt);
+  if (!prefill || !Number.isFinite(expiresAt) || expiresAt < Date.now()) {
+    return {
+      record: null,
+    };
+  }
+
+  return {
+    record: normalizeRecordPrefill(prefill),
+  };
 }
 
 function normalizeRecord(record, fallbackSalt) {
@@ -439,9 +520,18 @@ async function handleImportCsv(text, keyOverride) {
   };
 }
 
-async function openManagerPage() {
+async function openManagerPage(recordPrefill = null) {
+  let url = chrome.runtime.getURL('src/manager/manager.html');
+
+  if (recordPrefill) {
+    const prefillToken = await storeRecordPrefill(recordPrefill);
+    const managerUrl = new URL(url);
+    managerUrl.searchParams.set(RECORD_PREFILL_PARAM, prefillToken);
+    url = managerUrl.href;
+  }
+
   await chrome.tabs.create({
-    url: chrome.runtime.getURL('src/manager/manager.html'),
+    url,
   });
 
   return {
@@ -503,7 +593,9 @@ async function handleMessage(message) {
     case 'IMPORT_CSV':
       return handleImportCsv(message.csv, message.key);
     case 'OPEN_MANAGER_PAGE':
-      return openManagerPage();
+      return openManagerPage(message.recordPrefill);
+    case 'CONSUME_RECORD_PREFILL':
+      return consumeRecordPrefill(message.token);
     default:
       throw new Error('Mensagem desconhecida.');
   }
