@@ -1,7 +1,15 @@
 (function bootstrapManager() {
   const RECORD_PREFILL_PARAM = 'recordPrefill';
+  const PASSWORD_CHARSETS = {
+    lowercase: 'abcdefghijklmnopqrstuvwxyz',
+    uppercase: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+    numbers: '0123456789',
+    special: '!@#$%&*()-_=+[]{};:,.?/',
+  };
   const state = {
     currentPage: 1,
+    generatedPassword: '',
+    generatorInsertTarget: null,
     locked: true,
     pageSize: '10',
     pendingKeyRejecter: null,
@@ -14,18 +22,30 @@
   const elements = {
     clearFormButton: document.getElementById('clear-form-button'),
     closeRecordDialogButton: document.getElementById('close-record-dialog-button'),
+    closePasswordGeneratorDialogButton: document.getElementById('close-password-generator-dialog-button'),
     closeSettingsDialogButton: document.getElementById('close-settings-dialog-button'),
+    copyGeneratedPasswordButton: document.getElementById('copy-generated-password-button'),
     exportButton: document.getElementById('export-button'),
     formTitle: document.getElementById('form-title'),
+    generatePasswordButton: document.getElementById('generate-password-button'),
+    generatedPasswordOutput: document.getElementById('generated-password-output'),
     globalSaltInput: document.getElementById('global-salt-input'),
+    generatorLengthInput: document.getElementById('generator-length-input'),
+    generatorNumbersInput: document.getElementById('generator-numbers-input'),
+    generatorSpecialInput: document.getElementById('generator-special-input'),
+    generatorUppercaseInput: document.getElementById('generator-uppercase-input'),
     hintInput: document.getElementById('hint-input'),
     identifierInput: document.getElementById('identifier-input'),
     importButton: document.getElementById('import-button'),
     importFileInput: document.getElementById('import-file-input'),
+    insertGeneratedPasswordButton: document.getElementById('insert-generated-password-button'),
     linkInput: document.getElementById('link-input'),
     openRecordModalButton: document.getElementById('open-record-modal-button'),
+    openPasswordGeneratorButton: document.getElementById('open-password-generator-button'),
     openSettingsModalButton: document.getElementById('open-settings-modal-button'),
     passwordInput: document.getElementById('password-input'),
+    passwordGeneratorDialog: document.getElementById('password-generator-dialog'),
+    passwordGeneratorFab: document.getElementById('password-generator-fab'),
     paginationBar: document.getElementById('pagination-bar'),
     paginationMeta: document.getElementById('pagination-meta'),
     paginationNextButton: document.getElementById('pagination-next-button'),
@@ -71,6 +91,18 @@
     `;
   }
 
+  function getDiceIcon() {
+    return `
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <rect x="4.5" y="4.5" width="15" height="15" rx="3"></rect>
+        <circle cx="9" cy="9" r="1.1" fill="currentColor" stroke="none"></circle>
+        <circle cx="15" cy="9" r="1.1" fill="currentColor" stroke="none"></circle>
+        <circle cx="9" cy="15" r="1.1" fill="currentColor" stroke="none"></circle>
+        <circle cx="15" cy="15" r="1.1" fill="currentColor" stroke="none"></circle>
+      </svg>
+    `;
+  }
+
   async function sendMessage(type, payload = {}) {
     const response = await chrome.runtime.sendMessage({
       type,
@@ -106,6 +138,7 @@
       elements.recordDialog,
       elements.settingsDialog,
       elements.unlockDialog,
+      elements.passwordGeneratorDialog,
     ];
 
     for (let index = dialogHosts.length - 1; index >= 0; index -= 1) {
@@ -224,6 +257,97 @@
     elements.vaultFab.setAttribute('title', labelWithShortcut);
     elements.vaultFab.setAttribute('data-tooltip', labelWithShortcut);
     elements.vaultFab.setAttribute('aria-keyshortcuts', 'Control+L');
+  }
+
+  function normalizePasswordLength(value) {
+    const parsedValue = Number.parseInt(String(value || '').trim(), 10);
+
+    if (!Number.isFinite(parsedValue)) {
+      return 16;
+    }
+
+    return Math.min(128, Math.max(1, parsedValue));
+  }
+
+  function getRandomIndex(max) {
+    if (max <= 1) {
+      return 0;
+    }
+
+    return crypto.getRandomValues(new Uint32Array(1))[0] % max;
+  }
+
+  function shuffleCharacters(characters) {
+    const shuffled = [...characters];
+
+    for (let index = shuffled.length - 1; index > 0; index -= 1) {
+      const randomIndex = getRandomIndex(index + 1);
+      [shuffled[index], shuffled[randomIndex]] = [shuffled[randomIndex], shuffled[index]];
+    }
+
+    return shuffled;
+  }
+
+  function generatePassword() {
+    const charsets = [PASSWORD_CHARSETS.lowercase];
+
+    if (elements.generatorUppercaseInput.checked) {
+      charsets.push(PASSWORD_CHARSETS.uppercase);
+    }
+
+    if (elements.generatorNumbersInput.checked) {
+      charsets.push(PASSWORD_CHARSETS.numbers);
+    }
+
+    if (elements.generatorSpecialInput.checked) {
+      charsets.push(PASSWORD_CHARSETS.special);
+    }
+
+    const length = normalizePasswordLength(elements.generatorLengthInput.value);
+    const pool = charsets.join('');
+    const characters = [];
+
+    if (length >= charsets.length) {
+      for (const charset of charsets) {
+        characters.push(charset[getRandomIndex(charset.length)]);
+      }
+    }
+
+    while (characters.length < length) {
+      characters.push(pool[getRandomIndex(pool.length)]);
+    }
+
+    state.generatedPassword = shuffleCharacters(characters).join('');
+  }
+
+  function renderPasswordGenerator(syncLengthInput = true) {
+    if (syncLengthInput) {
+      const length = normalizePasswordLength(elements.generatorLengthInput.value);
+      elements.generatorLengthInput.value = String(length);
+    }
+
+    elements.generatedPasswordOutput.value = state.generatedPassword;
+    elements.copyGeneratedPasswordButton.disabled = !state.generatedPassword;
+    elements.insertGeneratedPasswordButton.disabled = !state.generatedPassword;
+    elements.insertGeneratedPasswordButton.hidden = !state.generatorInsertTarget;
+  }
+
+  function openPasswordGenerator(targetInput = null) {
+    state.generatorInsertTarget = targetInput;
+    renderPasswordGenerator();
+
+    if (!elements.passwordGeneratorDialog.open) {
+      elements.passwordGeneratorDialog.showModal();
+    }
+
+    syncToastHost();
+    if (state.generatedPassword) {
+      elements.generatedPasswordOutput.focus();
+      elements.generatedPasswordOutput.select();
+      return;
+    }
+
+    elements.generatePasswordButton.focus();
   }
 
   function renderStatus() {
@@ -525,6 +649,26 @@
     await refreshDashboard();
   }
 
+  async function copyGeneratedPassword() {
+    if (!state.generatedPassword) {
+      return;
+    }
+
+    await navigator.clipboard.writeText(state.generatedPassword);
+    showToast('Senha gerada copiada.');
+  }
+
+  function insertGeneratedPassword() {
+    if (!state.generatorInsertTarget || !state.generatedPassword) {
+      return;
+    }
+
+    state.generatorInsertTarget.value = state.generatedPassword;
+    state.generatorInsertTarget.focus();
+    closeDialog(elements.passwordGeneratorDialog);
+    showToast('Senha inserida no formulário.');
+  }
+
   function getRecordPrefillTokenFromUrl() {
     const searchParams = new URLSearchParams(window.location.search);
     return searchParams.get(RECORD_PREFILL_PARAM) || '';
@@ -585,14 +729,29 @@
   }
 
   function wireEvents() {
+    elements.openPasswordGeneratorButton.innerHTML = getDiceIcon();
+    elements.passwordGeneratorFab.innerHTML = getDiceIcon();
+    elements.passwordGeneratorFab.setAttribute('title', 'Gerar senha');
     elements.openRecordModalButton.addEventListener('click', () => openRecordDialog());
+    elements.openPasswordGeneratorButton.addEventListener('click', () => openPasswordGenerator(elements.passwordInput));
     elements.openSettingsModalButton.addEventListener('click', openSettingsDialog);
     elements.closeRecordDialogButton.addEventListener('click', () => closeDialog(elements.recordDialog));
+    elements.closePasswordGeneratorDialogButton.addEventListener('click', () => closeDialog(elements.passwordGeneratorDialog));
     elements.closeSettingsDialogButton.addEventListener('click', () => closeDialog(elements.settingsDialog));
+    elements.copyGeneratedPasswordButton.addEventListener('click', () => {
+      copyGeneratedPassword().catch((error) => showToast(error.message, 'error'));
+    });
     elements.clearFormButton.addEventListener('click', resetRecordForm);
+    elements.generatePasswordButton.addEventListener('click', () => {
+      generatePassword();
+      renderPasswordGenerator();
+    });
+    elements.insertGeneratedPasswordButton.addEventListener('click', insertGeneratedPassword);
+    elements.passwordGeneratorFab.addEventListener('click', () => openPasswordGenerator());
     elements.vaultFab.addEventListener('click', () => {
       handleVaultFabClick().catch((error) => showToast(error.message, 'error'));
     });
+    elements.generatorLengthInput.addEventListener('change', () => renderPasswordGenerator());
 
     elements.recordSearchInput.addEventListener('input', (event) => {
       state.searchQuery = event.target.value || '';
@@ -675,10 +834,22 @@
     elements.recordDialog.addEventListener('close', () => {
       syncToastHost();
       if (!elements.recordDialog.open) {
+        if (state.generatorInsertTarget === elements.passwordInput) {
+          closeDialog(elements.passwordGeneratorDialog);
+        }
+        state.generatorInsertTarget = null;
         resetRecordForm();
       }
     });
 
+    elements.passwordGeneratorDialog.addEventListener('close', () => {
+      state.generatorInsertTarget = null;
+      syncToastHost();
+    });
+    elements.passwordGeneratorDialog.addEventListener('cancel', (event) => {
+      event.preventDefault();
+      closeDialog(elements.passwordGeneratorDialog);
+    });
     elements.settingsDialog.addEventListener('close', syncToastHost);
     elements.unlockDialog.addEventListener('close', syncToastHost);
     document.addEventListener('keydown', handleManagerShortcut);
@@ -687,6 +858,7 @@
   async function init() {
     wireEvents();
     resetRecordForm();
+    renderPasswordGenerator();
     await refreshDashboard();
     await openInitialRecordPrefill();
   }

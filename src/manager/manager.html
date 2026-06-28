@@ -78,13 +78,22 @@
       </main>
     </div>
 
-    <button
-      id="vault-fab"
-      class="vault-fab"
-      type="button"
-      aria-label="Destrancar"
-      data-tooltip="Destrancar"
-    ></button>
+    <div class="fab-stack" aria-label="Ações rápidas do cofre">
+      <button
+        id="password-generator-fab"
+        class="vault-fab"
+        type="button"
+        aria-label="Gerar senha"
+        data-tooltip="Gerar senha"
+      ></button>
+      <button
+        id="vault-fab"
+        class="vault-fab"
+        type="button"
+        aria-label="Destrancar"
+        data-tooltip="Destrancar"
+      ></button>
+    </div>
 
     <div id="toast" class="toast" hidden></div>
 
@@ -117,7 +126,16 @@
 
         <label class="field">
           <span>Senha</span>
-          <input id="password-input" type="password" placeholder="Nova senha ou deixe em branco para manter a atual">
+          <div class="input-action-row">
+            <input id="password-input" type="password" placeholder="Nova senha ou deixe em branco para manter a atual">
+            <button
+              id="open-password-generator-button"
+              class="input-icon-button"
+              type="button"
+              aria-label="Abrir gerador de senha"
+              title="Gerar senha"
+            ></button>
+          </div>
         </label>
 
         <label class="field">
@@ -186,6 +204,59 @@
           <button id="unlock-confirm-button" class="button button-primary" value="confirm" type="submit">Destrancar</button>
         </div>
       </form>
+    </dialog>
+
+    <dialog id="password-generator-dialog" class="sheet-dialog password-generator-dialog">
+      <div class="sheet-form">
+        <div class="sheet-header">
+          <div>
+            <p class="section-kicker">Gerador</p>
+            <h2>Senha aleatória</h2>
+          </div>
+          <button
+            id="close-password-generator-dialog-button"
+            class="icon-button"
+            type="button"
+            aria-label="Fechar gerador de senha"
+          >×</button>
+        </div>
+
+        <p class="sheet-copy">
+          Letras minúsculas sempre entram na geração. Ajuste os demais critérios e copie a senha gerada.
+        </p>
+
+        <label class="field">
+          <span>Senha gerada</span>
+          <input id="generated-password-output" class="generated-password-output" type="text" readonly>
+        </label>
+
+        <div class="generator-controls">
+          <label class="generator-option">
+            <input id="generator-uppercase-input" type="checkbox" checked>
+            <span>Maiúsculas</span>
+          </label>
+
+          <label class="generator-option">
+            <input id="generator-numbers-input" type="checkbox" checked>
+            <span>Números</span>
+          </label>
+
+          <label class="generator-option">
+            <input id="generator-special-input" type="checkbox" checked>
+            <span>Caracteres especiais</span>
+          </label>
+
+          <label class="generator-option">
+            <input id="generator-length-input" type="number" min="1" max="128" value="16" inputmode="numeric">
+          </label>
+        </div>
+
+        <div class="form-actions">
+          <button id="generate-password-button" class="button button-secondary" type="button">Gerar</button>
+          <button id="insert-generated-password-button" class="button button-primary" type="button">Inserir</button>
+          <button id="copy-generated-password-button" class="button button-secondary" type="button">Copiar</button>
+        </div>
+      </div>
     </dialog>
 
     <script src="../lib/shared.js"></script>

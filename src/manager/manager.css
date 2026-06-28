@@ -206,6 +206,13 @@ h2 {
   gap: 8px;
 }
 
+.input-action-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+}
+
 .search-label,
 .field span {
   font-size: 0.92rem;
@@ -243,6 +250,19 @@ select:focus {
   border-color: rgba(76, 161, 255, 0.65);
   box-shadow: 0 0 0 4px rgba(76, 161, 255, 0.14);
   transform: translateY(-1px);
+}
+
+input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  accent-color: var(--accent);
+  transform: none;
+  box-shadow: none;
+}
+
+input[type="checkbox"]:focus {
+  transform: none;
 }
 
 .records-list {
@@ -395,6 +415,7 @@ select:focus {
 
 .button,
 .icon-button,
+.input-icon-button,
 .vault-fab {
   appearance: none;
   border: 0;
@@ -411,6 +432,7 @@ select:focus {
 
 .button:hover,
 .icon-button:hover,
+.input-icon-button:hover,
 .vault-fab:hover {
   box-shadow:
     0 0px 16px rgba(15, 56, 131, 0.774),
@@ -419,6 +441,7 @@ select:focus {
 
 .button:active,
 .icon-button:active,
+.input-icon-button:active,
 .vault-fab:active {
   transform: translateY(0);
 }
@@ -508,16 +531,45 @@ select:focus {
   line-height: 1;
 }
 
+.input-icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 16px;
+  border: 1px solid rgba(116, 167, 255, 0.14);
+  background: rgba(105, 151, 235, 0.12);
+  color: #edf4ff;
+}
+
+.input-icon-button:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(76, 161, 255, 0.14);
+}
+
+.input-icon-button svg {
+  width: 22px;
+  height: 22px;
+  stroke: currentColor;
+}
+
 .tools-stack {
   display: grid;
   gap: 16px;
 }
 
-.vault-fab {
+.fab-stack {
   position: fixed;
   right: 24px;
   bottom: 24px;
   z-index: 25;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.vault-fab {
   width: 64px;
   height: 64px;
   border-radius: 50%;
@@ -555,6 +607,45 @@ select:focus {
 .vault-fab:hover::after {
   opacity: 1;
   transform: translateY(-50%) translateX(-4px);
+}
+
+.password-generator-dialog {
+  width: min(540px, calc(100vw - 28px));
+}
+
+.generated-password-output {
+  font-family: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
+  letter-spacing: 0.02em;
+}
+
+.generator-controls {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+}
+
+.generator-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 52px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  border: 1px solid rgba(121, 156, 214, 0.16);
+  background: rgba(6, 14, 23, 0.52);
+  color: #edf4ff;
+  font-weight: 600;
+}
+
+.generator-length-field {
+  align-content: start;
+}
+#generator-length-input {
+  border: none;
+  padding: 0;
+  background: transparent;
+  min-height: 24px;
 }
 
 @keyframes card-enter {
@@ -621,13 +712,25 @@ select:focus {
   }
 
   .vault-fab {
-    right: 18px;
-    bottom: 18px;
     width: 58px;
     height: 58px;
   }
 
+  .fab-stack {
+    right: 18px;
+    bottom: 18px;
+  }
+
   .vault-fab::after {
     display: none;
+  }
+
+  .input-action-row,
+  .generator-controls {
+    grid-template-columns: 1fr;
+  }
+
+  .input-icon-button {
+    width: 100%;
   }
 }
