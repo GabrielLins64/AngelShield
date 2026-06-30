@@ -67,6 +67,7 @@
   border: 1px solid rgba(116, 167, 255, 0.18);
   background: rgba(13, 21, 33, 0.98);
   color: #f3f8ff;
+  color-scheme: dark;
   box-shadow: 0 24px 64px rgba(1, 7, 18, 0.5);
   font: 400 14px/1.45 "IBM Plex Sans", "Segoe UI", sans-serif;
 }
@@ -74,6 +75,8 @@
 .angelshield-panel h3 {
   margin: 0 0 6px;
   font: 700 16px/1.2 "Space Grotesk", "Segoe UI", sans-serif;
+  color: #f3f8ff !important;
+  -webkit-text-fill-color: #f3f8ff !important;
 }
 
 .angelshield-panel-header {
@@ -96,7 +99,8 @@
 
 .angelshield-panel p {
   margin: 0;
-  color: #aac0df;
+  color: #aac0df !important;
+  -webkit-text-fill-color: #aac0df !important;
 }
 
 .angelshield-panel-body {
@@ -106,7 +110,7 @@
   min-width: 0;
 }
 
-.angelshield-panel input {
+.angelshield-panel input:not([type="checkbox"]) {
   display: block;
   width: 100%;
   max-width: 100%;
@@ -119,7 +123,7 @@
   font: inherit;
 }
 
-.angelshield-panel input:focus {
+.angelshield-panel input:not([type="checkbox"]):focus {
   outline: none;
   border-color: rgba(76, 161, 255, 0.62);
   box-shadow: 0 0 0 4px rgba(76, 161, 255, 0.14);
@@ -143,12 +147,27 @@
   font: 600 13px/1.2 "IBM Plex Sans", "Segoe UI", sans-serif;
 }
 
+.angelshield-checkbox-row span {
+  color: #d7e7fb !important;
+  -webkit-text-fill-color: #d7e7fb !important;
+}
+
 .angelshield-panel .angelshield-checkbox-row input {
+  appearance: auto !important;
+  -webkit-appearance: checkbox !important;
+  display: inline-block !important;
   width: 16px;
   height: 16px;
   flex: 0 0 16px;
   margin: 0;
   padding: 0;
+  opacity: 1 !important;
+  visibility: visible !important;
+  position: static !important;
+  border: 1px solid rgba(140, 191, 255, 0.7) !important;
+  border-radius: 4px !important;
+  background: rgba(5, 12, 22, 0.72) !important;
+  box-shadow: none !important;
   cursor: pointer;
   accent-color: #245dbe;
 }
@@ -222,10 +241,13 @@
 
 .angelshield-option-title {
   font-weight: 700;
+  color: #f3f8ff !important;
+  -webkit-text-fill-color: #f3f8ff !important;
 }
 
 .angelshield-option-meta {
-  color: #aac0df;
+  color: #aac0df !important;
+  -webkit-text-fill-color: #aac0df !important;
   font-size: 12px;
 }
 
@@ -275,12 +297,14 @@
 }
 
 .angelshield-panel .angelshield-muted {
-  color: #aac0df;
+  color: #aac0df !important;
+  -webkit-text-fill-color: #aac0df !important;
   font-size: 12px;
 }
 
 .angelshield-panel .angelshield-error {
-  color: #ff97a4;
+  color: #ff97a4 !important;
+  -webkit-text-fill-color: #ff97a4 !important;
   font-size: 12px;
 }
 
