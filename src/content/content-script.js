@@ -1,4 +1,8 @@
 (function bootstrapContentScript() {
+  document.documentElement.removeAttribute('data-angelshield-content-script');
+  document.querySelectorAll('.angelshield-trigger, .angelshield-backdrop, .angelshield-panel')
+    .forEach((element) => element.remove());
+
   const OPEN_AUTOFILL_PANEL_MESSAGE = 'OPEN_AUTOFILL_PANEL';
   const logoUrl = chrome.runtime.getURL('assets/as_logo-removebg.png');
   const state = {
@@ -643,8 +647,7 @@
 
     if (state.records.length === 0) {
       fillButton.disabled = true;
-      recordInput.value = '';
-      recordInput.disabled = true;
+      recordInput.disabled = false;
       feedback.className = 'angelshield-muted';
       feedback.textContent = 'Abra o cofre para cadastrar um registro.';
       closeDropdown(false);

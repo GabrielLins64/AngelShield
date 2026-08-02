@@ -152,6 +152,16 @@
   -webkit-text-fill-color: #d7e7fb !important;
 }
 
+.angelshield-checkbox-row::before,
+.angelshield-checkbox-row::after,
+.angelshield-checkbox-row span::before,
+.angelshield-checkbox-row span::after,
+.angelshield-checkbox-row input::before,
+.angelshield-checkbox-row input::after {
+  display: none !important;
+  content: none !important;
+}
+
 .angelshield-panel .angelshield-checkbox-row input {
   appearance: auto !important;
   -webkit-appearance: checkbox !important;

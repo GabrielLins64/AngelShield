@@ -16,6 +16,8 @@ const OPEN_AUTOFILL_PANEL_MESSAGE = 'OPEN_AUTOFILL_PANEL';
 const RECORD_PREFILL_PARAM = 'recordPrefill';
 const RECORD_PREFILL_STORAGE_PREFIX = 'angelshield.recordPrefill.';
 const RECORD_PREFILL_TTL_MS = 5 * 60 * 1000;
+const CREDENTIAL_PROMPT_STORAGE_PREFIX = 'angelshield.credentialPrompt.';
+const CREDENTIAL_PROMPT_TTL_MS = 2 * 60 * 1000;
 
 async function initializeStorage() {
   const existing = await chrome.storage.local.get([STORAGE_KEYS.records, STORAGE_KEYS.settings]);
@@ -182,6 +184,157 @@ async function consumeRecordPrefill(token) {
   return {
     record: normalizeRecordPrefill(prefill),
   };
+}
+
+function getMessageTabId(sender) {
+  return Number.isInteger(sender?.tab?.id) ? sender.tab.id : null;
+}
+
+function getCredentialPromptStorageKey(tabId) {
+  return `${CREDENTIAL_PROMPT_STORAGE_PREFIX}${tabId}`;
+}
+
+function parseHttpUrl(value, allowMissingProtocol = false) {
+  const normalizedValue = ensureString(value).trim();
+
+  try {
+    const parsedUrl = new URL(normalizedValue);
+    if (['http:', 'https:'].includes(parsedUrl.protocol)) {
+      return parsedUrl;
+    }
+  } catch (error) {
+    // Tenta abaixo o formato sem protocolo quando permitido.
+  }
+
+  if (!allowMissingProtocol || !normalizedValue) {
+    return null;
+  }
+
+  try {
+    return new URL(`https://${normalizedValue}`);
+  } catch (fallbackError) {
+    return null;
+  }
+}
+
+function getSiteHostname(value, allowMissingProtocol = false) {
+  return parseHttpUrl(value, allowMissingProtocol)?.hostname.toLowerCase() || '';
+}
+
+function hasCredentialForHostname(records, hostname) {
+  return records.some((record) => getSiteHostname(record.link, true) === hostname);
+}
+
+async function clearCredentialPrompt(sender) {
+  const tabId = getMessageTabId(sender);
+  if (tabId == null) {
+    return;
+  }
+
+  await chrome.storage.session.remove(getCredentialPromptStorageKey(tabId));
+}
+
+async function captureSubmittedCredential(recordPrefill, sender) {
+  const tabId = getMessageTabId(sender);
+  const submittedSite = parseHttpUrl(sender?.url);
+  const username = ensureString(recordPrefill?.username);
+  const plainPassword = ensureString(recordPrefill?.plainPassword);
+
+  if (tabId == null || !submittedSite || !username.trim() || !plainPassword) {
+    return {
+      shouldPrompt: false,
+    };
+  }
+
+  const hostname = submittedSite.hostname.toLowerCase();
+  const records = await getRecords();
+  if (hasCredentialForHostname(records, hostname)) {
+    await clearCredentialPrompt(sender);
+    return {
+      shouldPrompt: false,
+    };
+  }
+
+  const record = normalizeRecordPrefill({
+    identifier: recordPrefill?.identifier || hostname,
+    username,
+    link: submittedSite.origin,
+    plainPassword,
+  });
+  const storageKey = getCredentialPromptStorageKey(tabId);
+  const pendingCredential = {
+    ...record,
+    expiresAt: Date.now() + CREDENTIAL_PROMPT_TTL_MS,
+  };
+
+  await chrome.storage.session.set({
+    [storageKey]: pendingCredential,
+  });
+
+  setTimeout(async () => {
+    try {
+      const result = await chrome.storage.session.get(storageKey);
+      if (result[storageKey]?.expiresAt === pendingCredential.expiresAt) {
+        await chrome.storage.session.remove(storageKey);
+      }
+    } catch (error) {
+      // O prazo também é conferido sempre que a sugestão é recuperada.
+    }
+  }, CREDENTIAL_PROMPT_TTL_MS);
+
+  return {
+    record,
+    shouldPrompt: true,
+  };
+}
+
+async function getPendingCredentialPrompt(sender) {
+  const tabId = getMessageTabId(sender);
+  if (tabId == null) {
+    return {
+      record: null,
+    };
+  }
+
+  const storageKey = getCredentialPromptStorageKey(tabId);
+  const result = await chrome.storage.session.get(storageKey);
+  const pendingCredential = result[storageKey] || null;
+  const expiresAt = Number(pendingCredential?.expiresAt);
+
+  if (!pendingCredential || !Number.isFinite(expiresAt) || expiresAt < Date.now()) {
+    await chrome.storage.session.remove(storageKey);
+    return {
+      record: null,
+    };
+  }
+
+  const record = normalizeRecordPrefill(pendingCredential);
+  const hostname = getSiteHostname(record.link);
+  const records = await getRecords();
+
+  if (!hostname || hasCredentialForHostname(records, hostname)) {
+    await chrome.storage.session.remove(storageKey);
+    return {
+      record: null,
+    };
+  }
+
+  return {
+    record,
+  };
+}
+
+async function openManagerForPendingCredential(sender) {
+  const pendingCredential = await getPendingCredentialPrompt(sender);
+  if (!pendingCredential.record) {
+    return {
+      opened: false,
+    };
+  }
+
+  const result = await openManagerPage(pendingCredential.record);
+  await clearCredentialPrompt(sender);
+  return result;
 }
 
 function normalizeRecord(record, fallbackSalt) {
@@ -569,7 +722,7 @@ async function openAutofillPanelInActiveTab() {
   }
 }
 
-async function handleMessage(message) {
+async function handleMessage(message, sender) {
   switch (message?.type) {
     case 'GET_DASHBOARD_DATA':
       return buildDashboardData();
@@ -584,6 +737,15 @@ async function handleMessage(message) {
       return handleDeleteRecord(message.id);
     case 'GET_AUTOFILL_RECORDS':
       return handleGetAutofillRecords(message.url);
+    case 'CAPTURE_SUBMITTED_CREDENTIAL':
+      return captureSubmittedCredential(message.recordPrefill, sender);
+    case 'GET_PENDING_CREDENTIAL_PROMPT':
+      return getPendingCredentialPrompt(sender);
+    case 'DISMISS_CREDENTIAL_PROMPT':
+      await clearCredentialPrompt(sender);
+      return { dismissed: true };
+    case 'OPEN_MANAGER_FOR_PENDING_CREDENTIAL':
+      return openManagerForPendingCredential(sender);
     case 'GET_RECORD_SECRET':
       return handleGetRecordSecret(message.id, message.key);
     case 'CHANGE_GLOBAL_SALT':
@@ -619,8 +781,12 @@ chrome.commands.onCommand.addListener((command) => {
   }
 });
 
+chrome.tabs.onRemoved.addListener((tabId) => {
+  chrome.storage.session.remove(getCredentialPromptStorageKey(tabId)).catch(() => {});
+});
+
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  handleMessage(message)
+  handleMessage(message, sender)
     .then((data) => sendResponse({ success: true, data }))
     .catch((error) => sendResponse({ success: false, error: error.message }));
 
