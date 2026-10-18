@@ -24,10 +24,21 @@ Senhas fora desse conjunto são rejeitadas no momento da criptografia para evita
 
 - O projeto mantém um salt padrão configurável.
 - Cada registro persiste o salt usado na sua última criptografia.
-- Ao alterar o salt global, o AngelShield recriptografa todos os registros existentes usando a key atualmente em memória.
+- Ao alterar o salt global, o AngelShield recriptografa todos os registros existentes usando a key informada ou recuperada da sessão. Depois, remove a key de sessão e tranca o cofre, mesmo que não existam registros.
 - Na importação por CSV, o salt do programa é sempre o `salt global` atualmente configurado.
 
 Essa abordagem preserva portabilidade no CSV sem perder a noção de um salt padrão do cofre.
+
+## Key na sessão
+
+- Ao destrancar o cofre, a key é mascarada com AES-GCM via Web Crypto antes de ser salva em `chrome.storage.session`.
+- A chave da máscara é derivada com SHA-256 do salt global e de um prefixo específico deste formato. Cada gravação usa um IV aleatório de 12 bytes.
+- O valor salvo contém `version`, `iv` e `ciphertext`; IV e conteúdo cifrado são representados em Base64. A key original só é recuperada internamente pelo service worker e não é salva em texto puro.
+- A recuperação usa o salt global atual, sem guardar uma cópia do salt anterior junto da máscara. Reiniciar o service worker mantém o destrancamento na mesma sessão, desde que o salt não mude. Alterar o salt remove a máscara e exige destrancar o cofre novamente.
+- Valores antigos em texto puro são migrados na inicialização, antes de processar mensagens. Se a máscara estiver inválida ou corrompida, a key de sessão é removida e o cofre volta a ficar trancado.
+- Trancar o cofre remove a máscara da sessão. A key não é persistida em `chrome.storage.local` nem exportada no CSV.
+
+Esta camada é ofuscação contra leitura direta do storage. Como o salt e o algoritmo estão disponíveis na extensão, alguém com acesso a esses dados ainda pode reverter a máscara. Ela não adiciona um segredo independente nem substitui a criptografia das senhas dos registros.
 
 ## CSV
 

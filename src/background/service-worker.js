@@ -39,6 +39,17 @@ async function initializeStorage() {
   if (Object.keys(writes).length > 0) {
     await chrome.storage.local.set(writes);
   }
+
+  const session = await chrome.storage.session.get(STORAGE_KEYS.vaultKey);
+  const legacyKey = session[STORAGE_KEYS.vaultKey];
+
+  if (typeof legacyKey === 'string') {
+    if (legacyKey.trim()) {
+      await setVaultKey(legacyKey);
+    } else {
+      await lockVault();
+    }
+  }
 }
 
 async function getRecords() {
@@ -71,12 +82,27 @@ async function saveSettings(settings) {
 
 async function getVaultKey() {
   const result = await chrome.storage.session.get(STORAGE_KEYS.vaultKey);
-  return ensureString(result[STORAGE_KEYS.vaultKey]);
+  const maskedKey = result[STORAGE_KEYS.vaultKey];
+
+  if (maskedKey == null) {
+    return '';
+  }
+
+  try {
+    const settings = await getSettings();
+    return await AngelShieldCrypto.unmaskVaultKey(maskedKey, settings.globalSalt);
+  } catch (error) {
+    await lockVault();
+    return '';
+  }
 }
 
 async function setVaultKey(key) {
+  const settings = await getSettings();
+  const maskedKey = await AngelShieldCrypto.maskVaultKey(ensureString(key), settings.globalSalt);
+
   await chrome.storage.session.set({
-    [STORAGE_KEYS.vaultKey]: ensureString(key),
+    [STORAGE_KEYS.vaultKey]: maskedKey,
   });
 }
 
@@ -548,29 +574,23 @@ async function handleChangeGlobalSalt(newSalt, keyOverride) {
 
   const [records, settings] = await Promise.all([getRecords(), getSettings()]);
 
-  if (records.length === 0) {
-    await saveSettings({
-      ...settings,
-      globalSalt: normalizedSalt,
+  let migratedRecords = [];
+
+  if (records.length > 0) {
+    const key = await resolveCryptoKey(keyOverride);
+    migratedRecords = records.map((record) => {
+      const plainPassword = decryptRecordPassword(record, key, settings);
+      return {
+        ...record,
+        salt: normalizedSalt,
+        encryptedPassword: encryptRecordPassword(plainPassword, key, normalizedSalt),
+      };
     });
 
-    return {
-      migratedRecords: 0,
-      globalSalt: normalizedSalt,
-    };
+    await saveRecords(migratedRecords);
   }
 
-  const key = await resolveCryptoKey(keyOverride);
-  const migratedRecords = records.map((record) => {
-    const plainPassword = decryptRecordPassword(record, key, settings);
-    return {
-      ...record,
-      salt: normalizedSalt,
-      encryptedPassword: encryptRecordPassword(plainPassword, key, normalizedSalt),
-    };
-  });
-
-  await saveRecords(migratedRecords);
+  await lockVault();
   await saveSettings({
     ...settings,
     globalSalt: normalizedSalt,
@@ -763,13 +783,7 @@ async function handleMessage(message, sender) {
   }
 }
 
-chrome.runtime.onInstalled.addListener(() => {
-  initializeStorage();
-});
-
-chrome.runtime.onStartup.addListener(() => {
-  initializeStorage();
-});
+const storageReady = initializeStorage();
 
 chrome.action.onClicked.addListener(() => {
   openManagerPage();
@@ -786,11 +800,10 @@ chrome.tabs.onRemoved.addListener((tabId) => {
 });
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  handleMessage(message, sender)
+  storageReady
+    .then(() => handleMessage(message, sender))
     .then((data) => sendResponse({ success: true, data }))
     .catch((error) => sendResponse({ success: false, error: error.message }));
 
   return true;
 });
-
-initializeStorage();

@@ -85,10 +85,17 @@
     return transform(password, getKeys(key, salt, true), 'decrypt');
   }
 
-  function encodeBase64(text) {
-    const bytes = new TextEncoder().encode(String(text ?? ''));
+  function bytesToBase64(bytes) {
     const binary = Array.from(bytes, (byte) => String.fromCharCode(byte)).join('');
     return btoa(binary);
+  }
+
+  function base64ToBytes(encodedText) {
+    return Uint8Array.from(atob(encodedText), (char) => char.charCodeAt(0));
+  }
+
+  function encodeBase64(text) {
+    return bytesToBase64(new TextEncoder().encode(String(text ?? '')));
   }
 
   function decodeBase64(encodedText) {
@@ -99,13 +106,62 @@
     }
 
     try {
-      const binary = atob(normalized);
-      const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
+      const bytes = base64ToBytes(normalized);
       const decoded = new TextDecoder().decode(bytes);
       return encodeBase64(decoded) === normalized ? decoded : normalized;
     } catch (error) {
       return normalized;
     }
+  }
+
+  async function deriveSessionMaskKey(salt) {
+    // O salt não é secreto: esta camada apenas mascara a key no storage da sessão.
+    const material = new TextEncoder().encode(`angelshield:vault-key:v1:${salt}`);
+    const digest = await root.crypto.subtle.digest('SHA-256', material);
+    return root.crypto.subtle.importKey('raw', digest, 'AES-GCM', false, ['encrypt', 'decrypt']);
+  }
+
+  async function maskVaultKey(key, salt) {
+    const normalizedSalt = String(salt ?? '');
+    const maskKey = await deriveSessionMaskKey(normalizedSalt);
+    const iv = root.crypto.getRandomValues(new Uint8Array(12));
+    const plaintext = new TextEncoder().encode(JSON.stringify(String(key ?? '')));
+    const ciphertext = await root.crypto.subtle.encrypt({ name: 'AES-GCM', iv }, maskKey, plaintext);
+
+    return {
+      version: 1,
+      iv: bytesToBase64(iv),
+      ciphertext: bytesToBase64(new Uint8Array(ciphertext)),
+    };
+  }
+
+  async function unmaskVaultKey(maskedKey, salt) {
+    if (
+      maskedKey?.version !== 1 ||
+      typeof maskedKey.iv !== 'string' ||
+      typeof maskedKey.ciphertext !== 'string'
+    ) {
+      throw new Error('Formato inválido da key de sessão.');
+    }
+
+    const iv = base64ToBytes(maskedKey.iv);
+    if (iv.length !== 12) {
+      throw new Error('IV inválido da key de sessão.');
+    }
+
+    const maskKey = await deriveSessionMaskKey(String(salt ?? ''));
+    const plaintext = await root.crypto.subtle.decrypt(
+      { name: 'AES-GCM', iv },
+      maskKey,
+      base64ToBytes(maskedKey.ciphertext),
+    );
+    const key = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(plaintext));
+
+    if (typeof key !== 'string' || !key.trim()) {
+      throw new Error('Key de sessão inválida.');
+    }
+
+    return key;
   }
 
   root.AngelShieldCrypto = {
@@ -115,6 +171,8 @@
     encrypt,
     getKeys,
     getUnsupportedCharacters,
+    maskVaultKey,
+    unmaskVaultKey,
     validCharacters,
   };
 })(typeof self !== 'undefined' ? self : window);

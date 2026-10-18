@@ -16,7 +16,7 @@ O AngelShield é uma extensão compatível com Chrome que mantém um cofre local
 - Cópia de usuário e senha pela tela da extensão.
 - Busca de registros por identificador, usuário ou site, sem diferenciar maiúsculas e acentos.
 - Paginação com páginas numeradas e opção de exibir 10, 50, 100 ou todos. A busca e a troca de quantidade retornam à primeira página, e exclusões ajustam a página atual aos resultados restantes.
-- Alteração do salt padrão com migração das senhas já armazenadas.
+- Alteração do salt padrão com migração das senhas já armazenadas, remoção da key de sessão e trancamento automático do cofre.
 - Exportação e importação de registros por CSV, com suporte a senha criptografada ou em texto puro.
 
 ## Arquitetura
@@ -30,7 +30,7 @@ O AngelShield é uma extensão compatível com Chrome que mantém um cofre local
 ## Armazenamento
 
 - `chrome.storage.local`: registros e configuração persistente.
-- `chrome.storage.session`: key do cofre, mantida apenas durante a sessão do navegador/extensão.
+- `chrome.storage.session`: key do cofre mascarada de forma reversível com o salt, mantida apenas durante a sessão do navegador/extensão. A forma original é recuperada internamente pelo service worker.
 
 ## Observações de UX
 

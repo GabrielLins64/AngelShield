@@ -926,7 +926,7 @@
       }
 
       const result = await sendMessage('CHANGE_GLOBAL_SALT', payload);
-      showToast(`Salt global atualizado. ${result.migratedRecords} registro(s) migrado(s).`);
+      showToast(`Salt global atualizado e cofre trancado. ${result.migratedRecords} registro(s) migrado(s).`);
       await refreshDashboard();
     } finally {
       elements.saveSaltButton.disabled = false;
