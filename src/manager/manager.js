@@ -88,6 +88,7 @@
     skipLink: document.getElementById('skip-link'),
     toast: document.getElementById('toast'),
     togglePasswordButton: document.getElementById('toggle-password-button'),
+    toggleSaltButton: document.getElementById('toggle-salt-button'),
     unlockCancelButton: document.getElementById('unlock-cancel-button'),
     unlockConfirmButton: document.getElementById('unlock-confirm-button'),
     unlockDescription: document.getElementById('unlock-description'),
@@ -260,6 +261,15 @@
     elements.togglePasswordButton.setAttribute('aria-pressed', String(visible));
   }
 
+  function setSaltVisibility(visible) {
+    elements.globalSaltInput.type = visible ? 'text' : 'password';
+    const label = visible ? 'Ocultar salt' : 'Mostrar salt';
+    elements.toggleSaltButton.innerHTML = getIcon(visible ? 'eyeOff' : 'eye');
+    elements.toggleSaltButton.setAttribute('aria-label', label);
+    elements.toggleSaltButton.title = label;
+    elements.toggleSaltButton.setAttribute('aria-pressed', String(visible));
+  }
+
   function populateRecordPrefillForm(prefill) {
     resetRecordForm();
     elements.identifierInput.value = prefill.identifier || '';
@@ -299,6 +309,7 @@
   }
 
   function renderPage(options = {}) {
+    setSaltVisibility(false);
     const settingsVisible = window.location.hash === '#settings';
     elements.vaultPage.hidden = settingsVisible;
     elements.settingsPage.hidden = !settingsVisible;
@@ -1046,6 +1057,9 @@
     elements.cancelRecordButton.addEventListener('click', () => closeDialog(elements.recordDialog));
     elements.togglePasswordButton.addEventListener('click', () => {
       setPasswordVisibility(elements.passwordInput.type === 'password');
+    });
+    elements.toggleSaltButton.addEventListener('click', () => {
+      setSaltVisibility(elements.globalSaltInput.type === 'password');
     });
     elements.clearSearchButton.addEventListener('click', clearSearch);
     elements.emptyStateAction.addEventListener('click', () => {

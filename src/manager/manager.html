@@ -151,7 +151,13 @@
                 </div>
                 <p class="sheet-copy">O salt global é usado junto com a chave para criptografar as senhas. Ao alterá-lo, as senhas salvas serão criptografadas novamente.</p>
                 <form id="salt-form" class="settings-form">
-                  <label class="field"><span>Salt global</span><input id="global-salt-input" type="text" placeholder="angelshield-default-salt" autocomplete="off" required aria-describedby="salt-help"></label>
+                  <div class="field">
+                    <label for="global-salt-input">Salt global</label>
+                    <div class="input-action-row">
+                      <input id="global-salt-input" type="password" placeholder="Digite o salt global" autocomplete="off" spellcheck="false" required aria-describedby="salt-help">
+                      <button id="toggle-salt-button" class="input-icon-button" type="button" aria-label="Mostrar salt" title="Mostrar salt" aria-pressed="false" aria-controls="global-salt-input"></button>
+                    </div>
+                  </div>
                   <p id="salt-help" class="field-help">Se o cofre estiver trancado, sua chave será solicitada apenas para esta alteração.</p>
                   <button id="save-salt-button" class="button button-primary" type="submit">Atualizar salt</button>
                 </form>
