@@ -185,6 +185,36 @@
     }
   }
 
+  function enableBackdropDismiss(dialog, dismiss = () => closeDialog(dialog)) {
+    let startedOnBackdrop = false;
+
+    function isOnBackdrop(event) {
+      if (event.target !== dialog) {
+        return false;
+      }
+      const bounds = dialog.getBoundingClientRect();
+      return event.clientX < bounds.left || event.clientX > bounds.right
+        || event.clientY < bounds.top || event.clientY > bounds.bottom;
+    }
+
+    dialog.addEventListener('pointerdown', (event) => {
+      startedOnBackdrop = event.isPrimary && event.button === 0 && isOnBackdrop(event);
+    });
+    dialog.addEventListener('pointercancel', () => {
+      startedOnBackdrop = false;
+    });
+    dialog.addEventListener('click', (event) => {
+      const shouldDismiss = startedOnBackdrop && isOnBackdrop(event);
+      startedOnBackdrop = false;
+      if (dialog.open && shouldDismiss) {
+        dismiss();
+      }
+    });
+    dialog.addEventListener('close', () => {
+      startedOnBackdrop = false;
+    });
+  }
+
   function getToastHost() {
     const dialogHosts = [
       elements.recordDialog,
@@ -999,6 +1029,10 @@
   }
 
   function wireEvents() {
+    for (const dialog of [elements.recordDialog, elements.passwordGeneratorDialog, elements.deleteDialog]) {
+      enableBackdropDismiss(dialog);
+    }
+    enableBackdropDismiss(elements.unlockDialog, settleKeyDialogAsCancelled);
     elements.openPasswordGeneratorButton.innerHTML = getDiceIcon();
     elements.openGeneratorButton.querySelector('[data-icon]').innerHTML = getDiceIcon();
     elements.openGeneratorButton.setAttribute('title', 'Gerar senha');
