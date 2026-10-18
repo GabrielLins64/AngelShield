@@ -29,7 +29,8 @@ angelshield/
 ## Atalhos
 
 - `Ctrl+Shift+Y`: abre a caixa de autopreenchimento do AngelShield na aba ativa, quando houver um formulário de login visível na página.
-- `Ctrl+L`: na página da extensão, aciona o controle do cofre para destrancar ou trancar, espelhando o botão flutuante.
+- `Ctrl+L`: na página da extensão, aciona o controle do cofre para destrancar ou trancar, espelhando o botão do cabeçalho.
+- `Ctrl+K`: na página da extensão, foca a busca por nome, usuário ou site. A busca ignora acentos; use `Esc` para limpá-la.
 
 ### Fluxo de desenvolvimento
 

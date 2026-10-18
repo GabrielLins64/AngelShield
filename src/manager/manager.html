@@ -3,260 +3,229 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>AngelShield</title>
+    <meta name="theme-color" content="#10131b">
+    <title>Meu cofre · AngelShield</title>
     <link rel="stylesheet" href="./manager.css">
   </head>
   <body>
-    <div class="page-shell">
-      <header class="hero">
-        <div class="hero-copy-block">
-          <p class="eyebrow">AngelShield</p>
-          <h1>Cofre local com preenchimento assistido</h1>
-          <p class="hero-copy">
-            Guarde credenciais e preencha logins facilmente com uma segurança inquebrável.
-          </p>
-          <p class="hero-copy">
-            <b>Atalhos:</b>
-            <ul>
-              <li><b>Ctrl+Shift+Y</b>: Abre a caixa de autopreenchimento (em qualquer página de login)</li>
-              <li><b>Ctrl+L</b>: Trancar ou destrancar o cofre (apenas na página da extensão)</li>
-            </ul>
-          </p>
-        </div>
-      </header>
+    <a id="skip-link" class="skip-link" href="#main-content">Pular para o cofre</a>
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="Navegação principal">
+        <a class="brand" href="./manager.html" aria-label="AngelShield, início">
+          <img src="../../assets/as_logo-removebg.png" alt="" width="36" height="36">
+          <span>Angel<span class="brand-accent">Shield</span><small>SEU COFRE PESSOAL</small></span>
+        </a>
 
-      <main class="dashboard-stack">
-        <section class="panel panel-list">
-          <div class="panel-heading panel-heading-list">
-            <div>
-              <p class="section-kicker">Cofre</p>
-              <h2>Registros salvos</h2>
-            </div>
-            <div class="panel-summary">
-              <span id="record-count-label" class="summary-pill">0 registros</span>
-              <div class="hero-actions panel-actions-inline">
-                <button id="open-record-modal-button" class="button button-primary" type="button">Novo registro</button>
-                <button id="open-settings-modal-button" class="button button-secondary" type="button">Configurações</button>
+        <div class="sidebar-navigation">
+          <p class="nav-label">Espaço pessoal</p>
+          <nav class="nav-items" aria-label="Ferramentas do cofre">
+            <a id="vault-page-link" class="nav-item is-active" href="#vault" aria-current="page">
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="3"/><circle cx="12" cy="11" r="3"/><path d="M12 14v3M8 7h8"/></svg>
+              <span>Meu cofre</span><span id="sidebar-record-count" class="nav-count">0</span>
+            </a>
+            <button id="open-generator-button" class="nav-item" type="button">
+              <span data-icon="dice"></span><span>Gerador de senhas</span>
+            </button>
+            <a id="settings-page-link" class="nav-item" href="#settings">
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 3-1 3-3 1-2 3 2 2v3l3 2 1 4h6l1-4 3-2v-3l2-2-2-3-3-1-1-3Z"/><circle cx="12" cy="12" r="3"/></svg>
+              <span>Configurações</span>
+            </a>
+          </nav>
+        </div>
+
+        <div class="sidebar-bottom">
+          <div class="shortcut-card">
+            <p class="nav-label">Acesso rápido</p>
+            <div><span>Buscar no cofre</span><kbd>Ctrl K</kbd></div>
+            <div><span>Trancar / destrancar</span><kbd>Ctrl L</kbd></div>
+            <p class="shortcut-note">Em uma página de login, use <kbd>Ctrl Shift Y</kbd> para preencher.</p>
+          </div>
+          <div class="local-note">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8m-4-4v4"/></svg>
+            <div><strong>Salvo neste navegador</strong><span>Seus dados ficam no seu dispositivo.</span></div>
+          </div>
+        </div>
+      </aside>
+
+      <div class="workspace">
+        <header class="topbar">
+          <p class="breadcrumb">Espaço pessoal <span>/</span> <strong id="current-page-label">Meu cofre</strong></p>
+          <button id="vault-control-button" class="vault-control" type="button" aria-label="Destrancar cofre"></button>
+        </header>
+
+        <main id="main-content" class="main-content" tabindex="-1">
+          <section id="vault-page" aria-labelledby="vault-page-title">
+            <div class="page-heading">
+              <div>
+                <p class="section-kicker">SEUS ACESSOS, ORGANIZADOS</p>
+                <div class="heading-title"><h1 id="vault-page-title" tabindex="-1">Meu cofre</h1><span id="record-count-label" class="count-badge">0 registros</span></div>
+                <p class="page-description">Um lugar para encontrar e gerenciar suas credenciais.</p>
               </div>
-            </div>
-          </div>
-
-          <div class="search-row">
-            <label class="search-field" for="record-search-input">
-              <span class="search-label">Buscar por identificador ou usuário</span>
-              <input id="record-search-input" type="search" placeholder="Ex.: github, email@dominio.com">
-            </label>
-          </div>
-
-          <div id="records-empty-state" class="empty-state" hidden>
-            Nenhum registro encontrado.
-          </div>
-
-          <div id="records-list" class="records-list"></div>
-
-          <div id="pagination-bar" class="pagination-bar" hidden>
-            <div class="pagination-summary">
-              <label class="pagination-page-size" for="page-size-select">
-                <span>Mostrar</span>
-                <select id="page-size-select">
-                  <option value="10">10</option>
-                  <option value="50">50</option>
-                  <option value="100">100</option>
-                  <option value="all">Todos</option>
-                </select>
-              </label>
-              <span id="pagination-meta" class="pagination-meta"></span>
+              <button id="open-record-modal-button" class="button button-primary" type="button">
+                <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Nova credencial
+              </button>
             </div>
 
-            <div class="pagination-actions">
-              <button id="pagination-prev-button" class="button button-secondary" type="button">Anterior</button>
-              <span id="pagination-page-label" class="summary-pill"></span>
-              <button id="pagination-next-button" class="button button-secondary" type="button">Próxima</button>
+            <div class="vault-notice">
+              <span id="vault-status-icon" class="notice-icon" aria-hidden="true"></span>
+              <div><strong id="vault-status-title">Cofre trancado</strong><p id="vault-status-description">Você pode ver seus registros. Para copiar uma senha, informe sua chave.</p></div>
+              <span class="local-badge"><span></span>Armazenamento local</span>
             </div>
-          </div>
-        </section>
-      </main>
+
+            <section class="vault-panel" aria-label="Credenciais salvas">
+              <h2 class="sr-only">Credenciais salvas</h2>
+              <div class="search-toolbar">
+                <div class="search-field">
+                  <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4 4"/></svg>
+                  <label class="sr-only" for="record-search-input">Buscar por nome, usuário ou site</label>
+                  <input id="record-search-input" type="search" placeholder="Buscar por nome, usuário ou site…" autocomplete="off" aria-controls="records-list" aria-keyshortcuts="Control+K">
+                  <button id="clear-search-button" class="icon-button" type="button" aria-label="Limpar busca" title="Limpar busca" hidden>×</button>
+                  <kbd class="search-shortcut">Ctrl K</kbd>
+                </div>
+                <span class="sort-label">Ordenado de A a Z</span>
+              </div>
+
+              <p id="search-results-label" class="search-results" role="status" aria-live="polite" aria-atomic="true">Carregando credenciais…</p>
+              <div id="records-column-headings" class="records-column-headings" aria-hidden="true"><span>Credencial</span><span>Usuário</span><span>Ações</span></div>
+              <div id="records-list" class="records-list" aria-busy="true"></div>
+
+              <div id="records-empty-state" class="empty-state" hidden>
+                <span id="empty-state-icon" class="empty-icon" aria-hidden="true"></span>
+                <h2 id="empty-state-title">Seu cofre começa aqui</h2>
+                <p id="empty-state-description">Adicione sua primeira credencial para ter seus acessos sempre à mão.</p>
+                <button id="empty-state-action" class="button button-primary" type="button">Adicionar credencial</button>
+              </div>
+
+              <footer id="pagination-bar" class="pagination-bar" hidden>
+                <div class="pagination-summary">
+                  <span id="pagination-meta" class="pagination-meta"></span>
+                  <label class="pagination-page-size" for="page-size-select"><span>Por página</span>
+                    <select id="page-size-select" aria-controls="records-list">
+                      <option value="10">10</option><option value="50">50</option><option value="100">100</option><option value="all">Todos</option>
+                    </select>
+                  </label>
+                </div>
+                <nav class="pagination-actions" aria-label="Páginas das credenciais">
+                  <button id="pagination-prev-button" class="pagination-arrow" type="button" aria-label="Página anterior" title="Página anterior"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m14 6-6 6 6 6"/></svg></button>
+                  <div id="pagination-pages" class="pagination-pages"></div>
+                  <button id="pagination-next-button" class="pagination-arrow" type="button" aria-label="Próxima página" title="Próxima página"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m10 6 6 6-6 6"/></svg></button>
+                  <span id="pagination-page-label" class="sr-only"></span>
+                </nav>
+              </footer>
+            </section>
+            <p class="workspace-note"><span class="status-dot"></span>Disponível offline <span class="note-separator">·</span> Apenas as senhas são criptografadas no armazenamento.</p>
+          </section>
+
+          <section id="settings-page" class="settings-page" aria-labelledby="settings-page-title" hidden>
+            <div class="page-heading">
+              <div>
+                <p class="section-kicker">PREFERÊNCIAS DO COFRE</p>
+                <h1 id="settings-page-title" tabindex="-1">Configurações</h1>
+                <p class="page-description">Gerencie a portabilidade e a criptografia das suas credenciais.</p>
+              </div>
+              <a class="button button-secondary" href="#vault">
+                <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m12 5-7 7 7 7M5 12h14"/></svg>Voltar ao cofre
+              </a>
+            </div>
+
+            <div class="settings-grid">
+              <section class="settings-section" aria-labelledby="portability-title">
+                <div class="settings-section-heading">
+                  <span class="notice-icon" aria-hidden="true"><svg class="icon" viewBox="0 0 24 24"><path d="M8 3v12m-4-4 4 4 4-4m4 10V9m-4 4 4-4 4 4"/></svg></span>
+                  <div><p class="section-kicker">PORTABILIDADE</p><h2 id="portability-title">Importar e exportar</h2></div>
+                </div>
+                <p class="sheet-copy">Leve suas credenciais com você ou traga registros de outro gerenciador.</p>
+                <div class="import-export-row">
+                  <button id="import-button" class="button button-secondary" type="button">Importar CSV</button>
+                  <button id="export-button" class="button button-secondary" type="button">Exportar CSV</button>
+                  <input id="import-file-input" type="file" accept=".csv,text/csv" hidden>
+                </div>
+                <p class="settings-info field-help">O arquivo exportado contém senhas criptografadas. Guarde também o salt global para usar o arquivo em outro cofre.</p>
+                <details class="csv-details"><summary>Formatos aceitos na importação</summary><p class="field-help">Use <code>encryptedPassword</code> para senhas criptografadas ou <code>password</code> para texto puro. Senhas em texto puro serão criptografadas com sua chave. Arquivos criptografados precisam de um salt compatível.</p></details>
+              </section>
+
+              <section class="settings-section" aria-labelledby="salt-title">
+                <div class="settings-section-heading">
+                  <span class="notice-icon" aria-hidden="true"><svg class="icon" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 1 1 8 0v3"/></svg></span>
+                  <div><p class="section-kicker">PROTEÇÃO DAS SENHAS</p><h2 id="salt-title">Criptografia</h2></div>
+                </div>
+                <p class="sheet-copy">O salt global é usado junto com a chave para criptografar as senhas. Ao alterá-lo, as senhas salvas serão criptografadas novamente.</p>
+                <form id="salt-form" class="settings-form">
+                  <label class="field"><span>Salt global</span><input id="global-salt-input" type="text" placeholder="angelshield-default-salt" autocomplete="off" required aria-describedby="salt-help"></label>
+                  <p id="salt-help" class="field-help">Se o cofre estiver trancado, sua chave será solicitada apenas para esta alteração.</p>
+                  <button id="save-salt-button" class="button button-primary" type="submit">Atualizar salt</button>
+                </form>
+              </section>
+            </div>
+            <p class="workspace-note"><span class="status-dot"></span>Estas configurações se aplicam ao cofre salvo neste navegador.</p>
+          </section>
+        </main>
+      </div>
     </div>
 
-    <div class="fab-stack" aria-label="Ações rápidas do cofre">
-      <button
-        id="password-generator-fab"
-        class="vault-fab"
-        type="button"
-        aria-label="Gerar senha"
-        data-tooltip="Gerar senha"
-      ></button>
-      <button
-        id="vault-fab"
-        class="vault-fab"
-        type="button"
-        aria-label="Destrancar"
-        data-tooltip="Destrancar"
-      ></button>
-    </div>
+    <div id="toast" class="toast" role="status" aria-live="polite" aria-atomic="true" hidden></div>
 
-    <div id="toast" class="toast" hidden></div>
-
-    <dialog id="record-dialog" class="sheet-dialog">
-      <form id="record-form" class="sheet-form" method="dialog">
+    <dialog id="record-dialog" class="sheet-dialog" aria-labelledby="form-title">
+      <form id="record-form" class="sheet-form">
         <div class="sheet-header">
-          <div>
-            <p class="section-kicker">Registro</p>
-            <h2 id="form-title">Novo registro</h2>
-          </div>
-          <button id="close-record-dialog-button" class="icon-button" type="button" aria-label="Fechar modal de registro">×</button>
+          <div><p class="section-kicker">MEU COFRE</p><h2 id="form-title">Nova credencial</h2></div>
+          <button id="close-record-dialog-button" class="icon-button" type="button" aria-label="Fechar formulário">×</button>
         </div>
-
         <input id="record-id" type="hidden">
-
-        <label class="field">
-          <span>Identificador</span>
-          <input id="identifier-input" type="text" placeholder="Ex.: GitHub pessoal" required>
-        </label>
-
-        <label class="field">
-          <span>Usuário</span>
-          <input id="username-input" type="text" placeholder="email@dominio.com">
-        </label>
-
-        <label class="field">
-          <span>Link</span>
-          <input id="link-input" type="url" placeholder="https://exemplo.com/login">
-        </label>
-
-        <label class="field">
-          <span>Senha</span>
+        <label class="field"><span>Nome da credencial <span class="required-mark">*</span></span><input id="identifier-input" type="text" placeholder="Ex.: GitHub pessoal" required autocomplete="off"></label>
+        <div class="form-grid">
+          <label class="field"><span>Usuário ou e-mail</span><input id="username-input" type="text" placeholder="voce@exemplo.com" autocomplete="off" spellcheck="false"></label>
+          <label class="field"><span>Site</span><input id="link-input" type="url" placeholder="https://exemplo.com" autocomplete="off"></label>
+        </div>
+        <div class="field">
+          <label for="password-input">Senha <span id="password-required-mark" class="required-mark">*</span></label>
           <div class="input-action-row">
-            <input id="password-input" type="password" placeholder="Nova senha ou deixe em branco para manter a atual">
-            <button
-              id="open-password-generator-button"
-              class="input-icon-button"
-              type="button"
-              aria-label="Abrir gerador de senha"
-              title="Gerar senha"
-            ></button>
+            <input id="password-input" type="password" placeholder="Digite ou gere uma senha" autocomplete="new-password" aria-describedby="password-help" required>
+            <button id="toggle-password-button" class="input-icon-button" type="button" aria-label="Mostrar senha" title="Mostrar senha" aria-pressed="false"></button>
+            <button id="open-password-generator-button" class="input-icon-button" type="button" aria-label="Gerar senha" title="Gerar senha"></button>
           </div>
-        </label>
-
-        <label class="field">
-          <span>Dica</span>
-          <textarea id="hint-input" rows="3" placeholder="Observação opcional"></textarea>
-        </label>
-
+          <p id="password-help" class="field-help">A senha será criptografada com a chave do cofre.</p>
+        </div>
+        <label class="field"><span>Observação <span class="optional-label">opcional</span></span><textarea id="hint-input" rows="2" placeholder="Uma dica para identificar este acesso"></textarea></label>
         <div class="form-actions">
-          <button class="button button-primary" type="submit">Salvar registro</button>
-          <button id="clear-form-button" class="button button-ghost" type="button">Limpar</button>
+          <button id="cancel-record-button" class="button button-secondary" type="button">Cancelar</button>
+          <button id="save-record-button" class="button button-primary" type="submit">Salvar credencial</button>
         </div>
       </form>
     </dialog>
 
-    <dialog id="settings-dialog" class="sheet-dialog">
-      <div class="sheet-form">
-        <div class="sheet-header">
-          <div>
-            <p class="section-kicker">Configuração</p>
-            <h2>Salt global e portabilidade</h2>
-          </div>
-          <button id="close-settings-dialog-button" class="icon-button" type="button" aria-label="Fechar modal de configuração">×</button>
-        </div>
-
-        <div class="tools-stack">
-          <label class="field">
-            <span>Salt global</span>
-            <input id="global-salt-input" type="text" placeholder="angelshield-default-salt">
-          </label>
-
-          <button id="save-salt-button" class="button button-secondary" type="button">Aplicar novo salt</button>
-
-          <div class="import-export-row">
-            <button id="export-button" class="button button-secondary" type="button">Exportar CSV</button>
-            <button id="import-button" class="button button-secondary" type="button">Importar CSV</button>
-            <input id="import-file-input" type="file" accept=".csv,text/csv" hidden>
-          </div>
-
-          <p class="panel-note">
-            A exportação usa `encryptedPassword`. Na importação você pode usar `encryptedPassword` ou `password`.
-          </p>
-        </div>
-      </div>
-    </dialog>
-
-    <dialog id="unlock-dialog" class="sheet-dialog">
-      <form id="unlock-form" class="sheet-form" method="dialog">
-        <div class="sheet-header">
-          <div>
-            <p class="section-kicker">Key</p>
-            <h2 id="unlock-title">Destrancar cofre</h2>
-          </div>
-          <button id="unlock-cancel-button" class="icon-button" value="cancel" type="button" aria-label="Cancelar">×</button>
-        </div>
-
-        <p id="unlock-description" class="sheet-copy">
-          Informe a key para mantê-la apenas em memória e liberar operações que dependem da senha.
-        </p>
-
-        <label class="field">
-          <span>Key</span>
-          <input id="unlock-key-input" type="password" autocomplete="off" autofocus required>
-        </label>
-
-        <div class="form-actions">
-          <button id="unlock-confirm-button" class="button button-primary" value="confirm" type="submit">Destrancar</button>
-        </div>
+    <dialog id="unlock-dialog" class="sheet-dialog compact-dialog" aria-labelledby="unlock-title" aria-describedby="unlock-description">
+      <form id="unlock-form" class="sheet-form">
+        <div class="sheet-header"><div><p class="section-kicker">ACESSO AO COFRE</p><h2 id="unlock-title">Destrancar cofre</h2></div><button id="unlock-cancel-button" class="icon-button" type="button" aria-label="Cancelar">×</button></div>
+        <p id="unlock-description" class="sheet-copy">Informe sua chave para destrancar o cofre nesta sessão.</p>
+        <label class="field"><span>Chave do cofre</span><input id="unlock-key-input" type="password" autocomplete="off" placeholder="Digite sua chave" autofocus required></label>
+        <p class="field-help">Sua chave fica apenas na memória durante o uso.</p>
+        <div class="form-actions"><button id="unlock-confirm-button" class="button button-primary" type="submit">Destrancar</button></div>
       </form>
     </dialog>
 
-    <dialog id="password-generator-dialog" class="sheet-dialog password-generator-dialog">
+    <dialog id="password-generator-dialog" class="sheet-dialog compact-dialog" aria-labelledby="generator-title">
       <div class="sheet-form">
-        <div class="sheet-header">
-          <div>
-            <p class="section-kicker">Gerador</p>
-            <h2>Senha aleatória</h2>
-          </div>
-          <button
-            id="close-password-generator-dialog-button"
-            class="icon-button"
-            type="button"
-            aria-label="Fechar gerador de senha"
-          >×</button>
-        </div>
-
-        <p class="sheet-copy">
-          Letras minúsculas sempre entram na geração. Ajuste os demais critérios e copie a senha gerada.
-        </p>
-
-        <label class="field">
-          <span>Senha gerada</span>
-          <input id="generated-password-output" class="generated-password-output" type="text" readonly>
-        </label>
-
+        <div class="sheet-header"><div><p class="section-kicker">FERRAMENTAS</p><h2 id="generator-title">Gerador de senhas</h2></div><button id="close-password-generator-dialog-button" class="icon-button" type="button" aria-label="Fechar gerador de senhas">×</button></div>
+        <p class="sheet-copy">Crie uma senha aleatória e ajuste as opções abaixo.</p>
+        <label class="field"><span>Senha gerada</span><input id="generated-password-output" class="generated-password-output" type="text" readonly spellcheck="false" aria-live="polite"></label>
+        <label class="generator-length-field" for="generator-length-input"><span>Comprimento <small>1 a 128 caracteres</small></span><input id="generator-length-input" type="number" min="1" max="128" value="16" inputmode="numeric"></label>
         <div class="generator-controls">
-          <label class="generator-option">
-            <input id="generator-uppercase-input" type="checkbox" checked>
-            <span>Maiúsculas</span>
-          </label>
-
-          <label class="generator-option">
-            <input id="generator-numbers-input" type="checkbox" checked>
-            <span>Números</span>
-          </label>
-
-          <label class="generator-option">
-            <input id="generator-special-input" type="checkbox" checked>
-            <span>Caracteres especiais</span>
-          </label>
-
-          <label class="generator-option">
-            <input id="generator-length-input" type="number" min="1" max="128" value="16" inputmode="numeric">
-          </label>
+          <label class="generator-option"><input id="generator-uppercase-input" type="checkbox" checked><span>Letras maiúsculas<small>A–Z</small></span></label>
+          <label class="generator-option"><input id="generator-numbers-input" type="checkbox" checked><span>Números<small>0–9</small></span></label>
+          <label class="generator-option"><input id="generator-special-input" type="checkbox" checked><span>Símbolos<small>! @ # $</small></span></label>
         </div>
-
-        <div class="form-actions">
-          <button id="generate-password-button" class="button button-secondary" type="button">Gerar</button>
-          <button id="insert-generated-password-button" class="button button-primary" type="button">Inserir</button>
-          <button id="copy-generated-password-button" class="button button-secondary" type="button">Copiar</button>
-        </div>
+        <p class="field-help">Letras minúsculas são sempre incluídas.</p>
+        <div class="form-actions generator-actions"><button id="generate-password-button" class="button button-secondary" type="button">Gerar outra</button><button id="copy-generated-password-button" class="button button-secondary" type="button">Copiar senha</button><button id="insert-generated-password-button" class="button button-primary" type="button">Usar senha</button></div>
       </div>
+    </dialog>
+
+    <dialog id="delete-dialog" class="sheet-dialog compact-dialog" aria-labelledby="delete-title" aria-describedby="delete-description">
+      <form id="delete-form" class="sheet-form">
+        <div class="sheet-header"><div><p class="section-kicker">REMOVER DO COFRE</p><h2 id="delete-title">Excluir credencial?</h2></div><button id="close-delete-dialog-button" class="icon-button" type="button" aria-label="Cancelar exclusão">×</button></div>
+        <p id="delete-description" class="sheet-copy"></p>
+        <div class="form-actions"><button id="cancel-delete-button" class="button button-secondary" type="button" autofocus>Cancelar</button><button id="confirm-delete-button" class="button button-danger" type="submit">Excluir credencial</button></div>
+      </form>
     </dialog>
 
     <script src="../lib/shared.js"></script>
