@@ -121,7 +121,7 @@
               <div>
                 <p class="section-kicker">PREFERÊNCIAS DO COFRE</p>
                 <h1 id="settings-page-title" tabindex="-1">Configurações</h1>
-                <p class="page-description">Gerencie a portabilidade e a criptografia das suas credenciais.</p>
+                <p class="page-description">Gerencie os backups e a proteção do seu cofre.</p>
               </div>
               <a class="button button-secondary" href="#vault">
                 <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m12 5-7 7 7 7M5 12h14"/></svg>Voltar ao cofre
@@ -129,27 +129,14 @@
             </div>
 
             <div class="settings-grid">
-              <section class="settings-section" aria-labelledby="portability-title">
-                <div class="settings-section-heading">
-                  <span class="notice-icon" aria-hidden="true"><svg class="icon" viewBox="0 0 24 24"><path d="M8 3v12m-4-4 4 4 4-4m4 10V9m-4 4 4-4 4 4"/></svg></span>
-                  <div><p class="section-kicker">PORTABILIDADE</p><h2 id="portability-title">Importar e exportar</h2></div>
+              <section class="settings-section settings-crypto" aria-labelledby="salt-title">
+                <div class="settings-crypto-copy">
+                  <div class="settings-section-heading">
+                    <span class="notice-icon" aria-hidden="true"><svg class="icon" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 1 1 8 0v3"/></svg></span>
+                    <div><p class="section-kicker">PROTEÇÃO DAS SENHAS</p><h2 id="salt-title">Criptografia</h2></div>
+                  </div>
+                  <p class="sheet-copy">O salt global é usado junto com a chave para criptografar as senhas. Ao alterá-lo, as senhas salvas serão criptografadas novamente e o cofre será trancado.</p>
                 </div>
-                <p class="sheet-copy">Leve suas credenciais com você ou traga registros de outro gerenciador.</p>
-                <div class="import-export-row">
-                  <button id="import-button" class="button button-secondary" type="button">Importar CSV</button>
-                  <button id="export-button" class="button button-secondary" type="button">Exportar CSV</button>
-                  <input id="import-file-input" type="file" accept=".csv,text/csv" hidden>
-                </div>
-                <p class="settings-info field-help">O arquivo exportado contém senhas criptografadas. Guarde também o salt global para usar o arquivo em outro cofre.</p>
-                <details class="csv-details"><summary>Formatos aceitos na importação</summary><p class="field-help">Use <code>encryptedPassword</code> para senhas criptografadas ou <code>password</code> para texto puro. Senhas em texto puro serão criptografadas com sua chave. Arquivos criptografados precisam de um salt compatível.</p></details>
-              </section>
-
-              <section class="settings-section" aria-labelledby="salt-title">
-                <div class="settings-section-heading">
-                  <span class="notice-icon" aria-hidden="true"><svg class="icon" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 1 1 8 0v3"/></svg></span>
-                  <div><p class="section-kicker">PROTEÇÃO DAS SENHAS</p><h2 id="salt-title">Criptografia</h2></div>
-                </div>
-                <p class="sheet-copy">O salt global é usado junto com a chave para criptografar as senhas. Ao alterá-lo, as senhas salvas serão criptografadas novamente e o cofre será trancado.</p>
                 <form id="salt-form" class="settings-form">
                   <div class="field">
                     <label for="global-salt-input">Salt global</label>
@@ -162,6 +149,60 @@
                   <button id="save-salt-button" class="button button-primary" type="submit">Atualizar salt</button>
                 </form>
               </section>
+
+              <section class="settings-section settings-transfer-card settings-drive-card" aria-labelledby="drive-title">
+                <div class="settings-section-heading">
+                  <span class="notice-icon" aria-hidden="true"><svg class="icon" viewBox="0 0 24 24"><path d="m8 3 5 9-5 9H2l5-9-5-9Zm5 9h9l-5 9H8M8 3h9l5 9"/></svg></span>
+                  <div><p class="section-kicker">BACKUP NA NUVEM</p><h2 id="drive-title">Google Drive</h2></div>
+                  <div class="drive-header-actions">
+                    <p id="google-connection-status" class="google-connection-status field-help" data-state="disconnected" role="status" aria-live="polite">Não conectado</p>
+                    <button id="google-configure" class="icon-button drive-configure-button" type="button" aria-label="Configurar Integração com Google" title="Configurar Integração com Google" aria-haspopup="dialog" aria-controls="google-config-dialog"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 3-1 3-3 1-2 3 2 2v3l3 2 1 4h6l1-4 3-2v-3l2-2-2-3-3-1-1-3Z"/><circle cx="12" cy="12" r="3"/></svg></button>
+                  </div>
+                </div>
+                <p class="sheet-copy">Salve versões no Google Drive ou importe um backup. Todas as operações são manuais.</p>
+                <div class="settings-transfer-actions">
+                  <div id="drive-import-action" class="drive-action-hint" data-unavailable="true" tabindex="0" aria-describedby="drive-import-help">
+                    <button id="drive-list-versions" class="button button-secondary" type="button" aria-describedby="drive-import-help" disabled>Importar do Drive</button>
+                    <span id="drive-import-help" class="drive-integration-tooltip" role="tooltip">Abra as configurações pela engrenagem e siga os passos indicados para criar a integração com o Google Drive.</span>
+                  </div>
+                  <div id="drive-export-action" class="drive-action-hint" data-unavailable="true" tabindex="0" aria-describedby="drive-export-help">
+                    <button id="drive-upload" class="button button-secondary" type="button" aria-describedby="drive-export-help" disabled>Exportar para o Drive</button>
+                    <span id="drive-export-help" class="drive-integration-tooltip" role="tooltip">Abra as configurações pela engrenagem e siga os passos indicados para criar a integração com o Google Drive.</span>
+                  </div>
+                </div>
+                <div class="settings-card-footer">
+                  <p id="drive-version-placeholder" class="field-help">Conecte sua conta Google para consultar as versões do backup.</p>
+                  <div id="drive-sync-panel" class="drive-sync-panel" hidden>
+                    <div class="drive-toolbar">
+                      <div class="drive-version-summary">
+                        <p id="drive-local-version" class="field-help">Versão local…</p>
+                        <p id="drive-remote-version" class="field-help" role="status" aria-live="polite">Versão no Drive: não consultada</p>
+                      </div>
+                      <button id="drive-recover-pending" class="button button-secondary" type="button" hidden>Verificar envio pendente</button>
+                    </div>
+                    <div id="drive-versions" class="drive-versions" aria-label="Versões no Drive"></div>
+                  </div>
+                  <p id="drive-operation-status" class="field-help" role="status" aria-live="polite"></p>
+                </div>
+              </section>
+
+              <section class="settings-section settings-transfer-card settings-csv-card" aria-labelledby="portability-title">
+                <div class="settings-section-heading">
+                  <span class="notice-icon" aria-hidden="true"><svg class="icon" viewBox="0 0 24 24"><path d="M8 3v12m-4-4 4 4 4-4m4 10V9m-4 4 4-4 4 4"/></svg></span>
+                  <div><p class="section-kicker">BACKUP MANUAL</p><h2 id="portability-title">Arquivo CSV</h2></div>
+                </div>
+                <p class="sheet-copy">Importe credenciais de um arquivo ou exporte uma cópia para guardar no seu computador.</p>
+                <div class="settings-transfer-actions">
+                  <button id="import-button" class="button button-secondary" type="button">Importar CSV</button>
+                  <button id="export-button" class="button button-secondary" type="button">Exportar CSV</button>
+                  <input id="import-file-input" type="file" accept=".csv,text/csv" hidden>
+                </div>
+                <div class="settings-card-footer">
+                  <p class="field-help">O arquivo exportado contém senhas criptografadas. Guarde também o salt global para usar o arquivo em outro cofre.</p>
+                  <details class="csv-details"><summary>Formatos aceitos na importação</summary><p class="field-help">Use <code>encryptedPassword</code> para senhas criptografadas ou <code>password</code> para texto puro. Senhas em texto puro serão criptografadas com sua chave. Arquivos criptografados precisam de um salt compatível.</p></details>
+                </div>
+              </section>
+
             </div>
             <p class="workspace-note"><span class="status-dot"></span>Estas configurações se aplicam ao cofre salvo neste navegador.</p>
           </section>
@@ -234,7 +275,65 @@
       </form>
     </dialog>
 
+    <dialog id="google-config-dialog" class="sheet-dialog drive-config-dialog" aria-labelledby="google-config-title" aria-describedby="google-config-description">
+      <div class="sheet-form">
+        <div class="sheet-header"><div><p class="section-kicker">CONFIGURAÇÃO AVANÇADA</p><h2 id="google-config-title" tabindex="-1">Configurar Integração com Google</h2></div><button id="google-close-config" class="icon-button" type="button" aria-label="Fechar configuração da integração Google">×</button></div>
+        <p id="google-config-description" class="sheet-copy">Configure as credenciais do seu projeto Google Cloud e o nome da pasta dos backups. Salve e use Conectar conta Google nesta janela para autorizar o acesso.</p>
+        <details class="csv-details"><summary>Como configurar no Google Cloud</summary>
+          <p class="field-help"><strong>Se aparecer “Que dados você acessará?”, escolha Dados do usuário.</strong> O backup fica no Drive da conta que você autorizar. Você precisa apenas de Client ID e Client Secret.</p>
+          <ol class="drive-setup">
+            <li>No <a href="https://console.cloud.google.com/" target="_blank" rel="noopener noreferrer">Google Cloud Console</a>, abra o seletor de projetos no topo, clique em <strong>Novo projeto</strong>, dê um nome e selecione o projeto criado.</li>
+            <li>Em <strong>APIs e serviços → Biblioteca</strong>, pesquise <strong>Google Drive API</strong> e clique em <strong>Ativar</strong>. Se o console permitir, siga sem cadastrar faturamento. Se exigir uma conta de faturamento, confira os preços e associe a conta em <strong>Faturamento → Meus projetos</strong>.</li>
+            <li>Na <strong>Plataforma de autenticação do Google → Branding</strong>, informe o nome AngelShield e seu e-mail. Para Gmail pessoal, escolha público <strong>Externo</strong>. Em <strong>Público-alvo → Usuários de teste</strong>, adicione o e-mail que usará o Drive.</li>
+            <li>Em <strong>Acesso a dados</strong>, adicione a permissão <code>https://www.googleapis.com/auth/drive.file</code> e salve.</li>
+            <li>Em <strong>Clientes → Criar cliente</strong>, escolha <strong>Aplicativo da Web</strong>. Nas <strong>URIs de redirecionamento autorizadas</strong>, cole o endereço completo do campo <strong>Redirecionamento para cadastrar no Google Cloud</strong> abaixo, incluindo <code>/google</code>. As origens JavaScript podem ficar vazias para este fluxo.</li>
+            <li>Crie o cliente e copie o <strong>Client ID</strong> e o <strong>Client Secret</strong> para os campos abaixo. Copie o segredo completo agora, pois ele só é mostrado integralmente na criação.</li>
+            <li>Em <strong>Nome da pasta</strong>, mantenha <strong>AngelShield</strong> ou informe outro nome. Clique em <strong>Salvar configuração</strong> e depois em <strong>Conectar conta Google</strong> nesta janela. Escolha a conta de teste e autorize o acesso. Feche a configuração e use <strong>Exportar para o Drive</strong> para criar a pasta, se necessário, e o backup após sua confirmação.</li>
+          </ol>
+          <p class="field-help">No modo Em teste, o Google exige nova autorização após sete dias para este acesso ao Drive. Use <strong>Conectar conta Google</strong> novamente quando necessário.</p>
+          <p class="field-help">As credenciais e a autorização salva ficam neste navegador. Ao abrir as configurações, o AngelShield verifica a conexão e pode renovar o acesso salvo. Os backups só são importados ou exportados quando você solicitar. Use o mesmo projeto Google Cloud nas instalações que compartilharão o histórico.</p>
+        </details>
+        <form id="google-config-form" class="settings-form">
+          <div class="form-grid">
+            <label class="field"><span>OAuth Client ID</span><input id="google-client-id" type="text" autocomplete="off" spellcheck="false" placeholder="….apps.googleusercontent.com" required></label>
+            <label class="field"><span>OAuth Client Secret</span><input id="google-client-secret" type="password" autocomplete="new-password" placeholder="Cole o Client Secret"></label>
+          </div>
+          <label class="field"><span>Nome da pasta</span><input id="google-folder-name" type="text" autocomplete="off" value="AngelShield" required></label>
+          <label class="field"><span>Redirecionamento para cadastrar no Google Cloud</span><input id="google-redirect-url" type="text" readonly spellcheck="false"></label>
+          <p class="field-help">Deixe Client Secret vazio para manter o valor salvo. O AngelShield usa a pasta com o nome informado e a cria no primeiro envio, se necessário. Nenhum salt ou chave do cofre é enviado ao Google.</p>
+          <div class="form-actions"><button id="google-cancel-config" class="button button-secondary" type="button">Fechar</button><button id="google-save-config" class="button button-primary" type="submit">Salvar configuração</button></div>
+        </form>
+        <div class="drive-config-connection">
+          <p id="google-config-connection-status" class="google-connection-status field-help" data-state="disconnected" role="status" aria-live="polite">Não conectado</p>
+          <p id="google-config-connection-help" class="field-help">Salve Client ID e Client Secret e conecte sua conta Google.</p>
+          <div class="drive-actions"><button id="google-connect" class="button button-primary" type="button" disabled>Conectar conta Google</button><button id="google-disconnect" class="button button-secondary" type="button" hidden>Desconectar conta Google</button></div>
+        </div>
+      </div>
+    </dialog>
+
+    <dialog id="drive-review-dialog" class="sheet-dialog drive-review-dialog" aria-labelledby="drive-review-title">
+      <div class="sheet-form">
+        <div class="sheet-header"><div><p class="section-kicker">SINCRONIZAÇÃO MANUAL</p><h2 id="drive-review-title">Revisar versões</h2></div><button id="drive-close-review" class="icon-button" type="button" aria-label="Fechar revisão">×</button></div>
+        <p id="drive-review-description" class="sheet-copy"></p>
+        <div class="drive-copy-grid">
+          <section class="drive-copy"><h3>Neste navegador</h3><p id="drive-review-local"></p></section>
+          <section class="drive-copy"><h3>No Google Drive</h3><label class="field"><span>Versão para comparar ou usar</span><select id="drive-review-remote"></select></label><p id="drive-review-remote-info" class="field-help"></p></section>
+        </div>
+        <div id="drive-conflict-actions" class="drive-actions" hidden>
+          <button id="drive-use-local" class="button button-secondary" type="button">Usar cópia local</button>
+          <button id="drive-use-remote" class="button button-secondary" type="button">Usar cópia do Drive</button>
+          <button id="drive-show-differences" class="button button-primary" type="button">Mostrar diferenças</button>
+        </div>
+        <p id="drive-comparison-summary" class="field-help" role="status"></p>
+        <div id="drive-differences" class="drive-differences"></div>
+        <button id="drive-choose-merge" class="button button-primary" type="button" hidden>Usar escolhas por credencial</button>
+        <div id="drive-confirmation" class="drive-confirmation" hidden><p id="drive-confirmation-text"></p><button id="drive-apply" class="button button-primary" type="button">Confirmar</button></div>
+        <p class="field-help">O salt deste navegador não será alterado. As versões anteriores permanecem no Drive.</p>
+      </div>
+    </dialog>
+
     <script src="../lib/shared.js"></script>
     <script src="./manager.js"></script>
+    <script src="./drive-manager.js"></script>
   </body>
 </html>

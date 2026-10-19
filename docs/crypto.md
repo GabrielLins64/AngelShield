@@ -49,3 +49,13 @@ Esta camada é ofuscação contra leitura direta do storage. Como o salt e o alg
 - Se o CSV trouxer `password` em texto puro, a extensão solicita a key do cofre para criptografar a senha durante a importação.
 - Se o CSV trouxer `encryptedPassword`, a leitura assume o `salt global` atualmente configurado no cofre.
 - Para `encryptedPassword`, o `salt global` configurado no cofre de destino deve ser compatível com o usado na origem.
+
+## Backups no Google Drive
+
+- Usam os seis campos do CSV e a mesma codificação Base64. Base64 é apenas codificação; a cifra continua restrita ao campo de senha.
+- O exportador de backup seleciona os campos explicitamente. Nunca envia `salt`, salt global, key mascarada, key original ou credenciais Google.
+- O importador remoto lê apenas esses campos e associa cada registro ao salt global local atual. Um salt remoto, caso apareça como coluna extra, é ignorado.
+- O `encryptedPassword` é copiado sem recriptografia. Salt incompatível produz senhas incorretas intencionalmente, como na importação CSV atual.
+- A comparação de conflitos usa a chave recuperada pelo service worker e o salt local. Os valores descriptografados ficam apenas na interface e são descartados ao trancar ou fechar a comparação.
+- Não é adicionada criptografia externa ao CSV nem validação da senha ou do salt de origem.
+- O AES-GCM existente continua limitado à máscara local da key de sessão. OAuth usa tokens separados e nunca modifica essa máscara nem o salt.

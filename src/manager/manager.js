@@ -217,6 +217,11 @@
   }
 
   function getToastHost() {
+    if (elements.unlockDialog.open) return elements.unlockDialog;
+    const driveReview = document.getElementById('drive-review-dialog');
+    if (driveReview?.open) return driveReview;
+    const googleConfig = document.getElementById('google-config-dialog');
+    if (googleConfig?.open) return googleConfig;
     const dialogHosts = [
       elements.recordDialog,
       elements.unlockDialog,
@@ -765,6 +770,7 @@
     }
     renderStatus();
     renderRecords();
+    window.dispatchEvent(new CustomEvent('angelshield-vault-state'));
   }
 
   function openKeyDialog(options = {}) {
@@ -1195,6 +1201,7 @@
       closeDialog(elements.passwordGeneratorDialog);
     });
     elements.unlockDialog.addEventListener('close', syncToastHost);
+    document.getElementById('google-config-dialog').addEventListener('close', syncToastHost);
     document.addEventListener('keydown', handleManagerShortcut);
     window.addEventListener('hashchange', () => renderPage({ focus: true }));
     elements.skipLink.addEventListener('click', (event) => {
@@ -1213,5 +1220,10 @@
     await openInitialRecordPrefill();
   }
 
+  window.AngelShieldManager = {
+    sendMessage, showToast, reportError, refreshDashboard, promptKeyForOneOffAction,
+    unlockVaultExplicitly, enableBackdropDismiss, closeDialog,
+    get locked() { return state.locked; },
+  };
   init().catch(reportError);
 })();

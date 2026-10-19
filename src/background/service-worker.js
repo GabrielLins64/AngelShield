@@ -1,10 +1,9 @@
-importScripts('../lib/shared.js', '../lib/blake2b.js', '../lib/crypto.js');
+importScripts('../lib/shared.js', '../lib/blake2b.js', '../lib/crypto.js', '../lib/vault-sync.js', './google-drive.js', './drive-sync.js');
 
 const { AngelShieldCrypto, AngelShieldShared } = self;
 
 const {
   CSV_COMMON_HEADERS,
-  CSV_EXPORT_HEADERS,
   DEFAULT_SETTINGS,
   STORAGE_KEYS,
   createRecordId,
@@ -18,13 +17,27 @@ const RECORD_PREFILL_STORAGE_PREFIX = 'angelshield.recordPrefill.';
 const RECORD_PREFILL_TTL_MS = 5 * 60 * 1000;
 const CREDENTIAL_PROMPT_STORAGE_PREFIX = 'angelshield.credentialPrompt.';
 const CREDENTIAL_PROMPT_TTL_MS = 2 * 60 * 1000;
+const REVISION_STORAGE_KEY = 'angelshield.vaultRevision';
+let mutationTail = Promise.resolve();
+let driveSync;
+
+function serializeMutation(action) {
+  const pending = mutationTail.then(action);
+  mutationTail = pending.catch(() => {});
+  return pending;
+}
 
 async function initializeStorage() {
-  const existing = await chrome.storage.local.get([STORAGE_KEYS.records, STORAGE_KEYS.settings]);
+  await chrome.storage.local.setAccessLevel({ accessLevel: 'TRUSTED_CONTEXTS' });
+  const existing = await chrome.storage.local.get([STORAGE_KEYS.records, STORAGE_KEYS.settings, REVISION_STORAGE_KEY]);
   const writes = {};
 
   if (!Array.isArray(existing[STORAGE_KEYS.records])) {
     writes[STORAGE_KEYS.records] = [];
+  }
+
+  if (!existing[REVISION_STORAGE_KEY]) {
+    writes[REVISION_STORAGE_KEY] = AngelShieldVaultSync.revision(existing[STORAGE_KEYS.records]?.length ? 1 : 0);
   }
 
   if (!existing[STORAGE_KEYS.settings] || typeof existing[STORAGE_KEYS.settings] !== 'object') {
@@ -58,9 +71,22 @@ async function getRecords() {
 }
 
 async function saveRecords(records) {
+  const previous = await getRecords();
+  const withLocalSalt = (items) => {
+    const salts = new Map(items.map((record) => [record.id, ensureString(record.salt)]));
+    return JSON.stringify(AngelShieldVaultSync.portableRecords(items).map((record) => ({ ...record, salt: salts.get(record.id) })));
+  };
+  if (withLocalSalt(previous) === withLocalSalt(records)) return;
+  const revision = await getRevision();
   await chrome.storage.local.set({
     [STORAGE_KEYS.records]: records,
+    [REVISION_STORAGE_KEY]: AngelShieldVaultSync.revision(revision.number + 1),
   });
+  driveSync?.invalidate();
+}
+
+async function getRevision() {
+  return (await chrome.storage.local.get(REVISION_STORAGE_KEY))[REVISION_STORAGE_KEY];
 }
 
 async function getSettings() {
@@ -100,6 +126,8 @@ async function getVaultKey() {
 async function setVaultKey(key) {
   const settings = await getSettings();
   const maskedKey = await AngelShieldCrypto.maskVaultKey(ensureString(key), settings.globalSalt);
+  const existing = await chrome.storage.session.get(STORAGE_KEYS.vaultKey);
+  if (existing[STORAGE_KEYS.vaultKey] != null) driveSync?.invalidate();
 
   await chrome.storage.session.set({
     [STORAGE_KEYS.vaultKey]: maskedKey,
@@ -107,6 +135,7 @@ async function setVaultKey(key) {
 }
 
 async function lockVault() {
+  driveSync?.invalidate();
   await chrome.storage.session.remove(STORAGE_KEYS.vaultKey);
 }
 
@@ -409,11 +438,6 @@ function encryptRecordPassword(password, key, salt) {
   return AngelShieldCrypto.encrypt(password, key, salt);
 }
 
-function escapeCsvCell(value) {
-  const text = ensureString(value).replace(/"/g, '""');
-  return `"${text}"`;
-}
-
 function parseCsv(text) {
   const rows = [];
   let current = '';
@@ -604,15 +628,8 @@ async function handleChangeGlobalSalt(newSalt, keyOverride) {
 
 async function handleExportCsv() {
   const records = await getRecords();
-  const lines = [
-    CSV_EXPORT_HEADERS.map(escapeCsvCell).join(','),
-    ...records.map((record) =>
-      CSV_EXPORT_HEADERS.map((header) => escapeCsvCell(AngelShieldCrypto.encodeBase64(record[header] || ''))).join(','),
-    ),
-  ];
-
   return {
-    csv: lines.join('\n'),
+    csv: AngelShieldVaultSync.serializeCsv(records),
   };
 }
 
@@ -743,6 +760,15 @@ async function openAutofillPanelInActiveTab() {
 }
 
 async function handleMessage(message, sender) {
+  if (typeof message?.type === 'string' && message.type.startsWith('DRIVE_')) {
+    const managerUrl = new URL(chrome.runtime.getURL('src/manager/manager.html'));
+    const senderUrl = new URL(sender?.url || 'https://invalid.invalid');
+    if (sender?.id !== chrome.runtime.id || senderUrl.protocol !== managerUrl.protocol
+      || senderUrl.host !== managerUrl.host || senderUrl.pathname !== managerUrl.pathname) {
+      throw new Error('Esta operação está disponível somente no gerenciador do AngelShield.');
+    }
+    return driveSync.handle(message);
+  }
   switch (message?.type) {
     case 'GET_DASHBOARD_DATA':
       return buildDashboardData();
@@ -783,6 +809,7 @@ async function handleMessage(message, sender) {
   }
 }
 
+driveSync = AngelShieldDriveSync.create({ getRecords, getSettings, getRevision, resolveCryptoKey, requireVaultKey, isLocked, parseCsv });
 const storageReady = initializeStorage();
 
 chrome.action.onClicked.addListener(() => {
@@ -801,9 +828,13 @@ chrome.tabs.onRemoved.addListener((tabId) => {
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   storageReady
-    .then(() => handleMessage(message, sender))
+    .then(() => {
+      const mutating = ['SAVE_RECORD', 'DELETE_RECORD', 'IMPORT_CSV', 'CHANGE_GLOBAL_SALT', 'UNLOCK_VAULT'].includes(message?.type)
+        || typeof message?.type === 'string' && message.type.startsWith('DRIVE_');
+      return mutating ? serializeMutation(() => handleMessage(message, sender)) : handleMessage(message, sender);
+    })
     .then((data) => sendResponse({ success: true, data }))
-    .catch((error) => sendResponse({ success: false, error: error.message }));
+    .catch((error) => sendResponse({ success: false, error: error.message, code: error.code || '' }));
 
   return true;
 });

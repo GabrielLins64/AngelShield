@@ -1,9 +1,10 @@
 {
   "manifest_version": 3,
+  "minimum_chrome_version": "116",
   "name": "AngelShield",
   "version": "0.1.0",
   "description": "Gerenciador local de credenciais com criptografia simétrica e preenchimento assistido.",
-  "permissions": ["storage", "tabs", "clipboardWrite"],
+  "permissions": ["storage", "tabs", "clipboardWrite", "identity"],
   "host_permissions": ["<all_urls>"],
   "background": {
     "service_worker": "src/background/service-worker.js"
