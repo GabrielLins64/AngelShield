@@ -50,7 +50,12 @@
       <div class="workspace">
         <header class="topbar">
           <p class="breadcrumb">Espaço pessoal <span>/</span> <strong id="current-page-label">Meu cofre</strong></p>
-          <button id="vault-control-button" class="vault-control" type="button" aria-label="Destrancar cofre"></button>
+          <div class="topbar-actions">
+            <button id="open-support-dialog-button" class="support-button" type="button" aria-label="Apoiar o AngelShield" title="Apoiar o AngelShield" aria-haspopup="dialog" aria-controls="support-dialog">
+              <svg class="support-heart" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z"/></svg>
+            </button>
+            <button id="vault-control-button" class="vault-control" type="button" aria-label="Destrancar cofre"></button>
+          </div>
         </header>
 
         <main id="main-content" class="main-content" tabindex="-1">
@@ -211,6 +216,20 @@
     </div>
 
     <div id="toast" class="toast" role="status" aria-live="polite" aria-atomic="true" hidden></div>
+
+    <dialog id="support-dialog" class="sheet-dialog compact-dialog" aria-labelledby="support-title" aria-describedby="support-description">
+      <div class="sheet-form">
+        <div class="sheet-header">
+          <div><p class="section-kicker">FEITO COM DEDICAÇÃO</p><h2 id="support-title">Apoie o AngelShield</h2></div>
+          <button id="close-support-dialog-button" class="icon-button" type="button" aria-label="Fechar apoio ao projeto" autofocus>×</button>
+        </div>
+        <p id="support-description" class="sheet-copy">O AngelShield te ajuda no dia a dia? Contribua com qualquer valor via Pix para apoiar o desenvolvimento do projeto. Obrigado pelo carinho!</p>
+        <figure class="support-qrcode">
+          <img src="../../assets/qrcode_pix.png" alt="QR Code Pix para apoiar o desenvolvimento do AngelShield" width="500" height="500">
+          <figcaption>Escaneie com o app do seu banco para contribuir.</figcaption>
+        </figure>
+      </div>
+    </dialog>
 
     <dialog id="record-dialog" class="sheet-dialog" aria-labelledby="form-title">
       <form id="record-form" class="sheet-form">

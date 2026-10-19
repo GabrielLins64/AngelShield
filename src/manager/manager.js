@@ -29,6 +29,7 @@
     closeDeleteDialogButton: document.getElementById('close-delete-dialog-button'),
     closeRecordDialogButton: document.getElementById('close-record-dialog-button'),
     closePasswordGeneratorDialogButton: document.getElementById('close-password-generator-dialog-button'),
+    closeSupportDialogButton: document.getElementById('close-support-dialog-button'),
     copyGeneratedPasswordButton: document.getElementById('copy-generated-password-button'),
     currentPageLabel: document.getElementById('current-page-label'),
     confirmDeleteButton: document.getElementById('confirm-delete-button'),
@@ -57,6 +58,7 @@
     mainContent: document.getElementById('main-content'),
     openRecordModalButton: document.getElementById('open-record-modal-button'),
     openPasswordGeneratorButton: document.getElementById('open-password-generator-button'),
+    openSupportDialogButton: document.getElementById('open-support-dialog-button'),
     passwordInput: document.getElementById('password-input'),
     passwordHelp: document.getElementById('password-help'),
     passwordRequiredMark: document.getElementById('password-required-mark'),
@@ -86,6 +88,7 @@
     settingsPageLink: document.getElementById('settings-page-link'),
     settingsPageTitle: document.getElementById('settings-page-title'),
     skipLink: document.getElementById('skip-link'),
+    supportDialog: document.getElementById('support-dialog'),
     toast: document.getElementById('toast'),
     togglePasswordButton: document.getElementById('toggle-password-button'),
     toggleSaltButton: document.getElementById('toggle-salt-button'),
@@ -227,6 +230,7 @@
       elements.unlockDialog,
       elements.passwordGeneratorDialog,
       elements.deleteDialog,
+      elements.supportDialog,
     ];
 
     for (let index = dialogHosts.length - 1; index >= 0; index -= 1) {
@@ -1046,7 +1050,7 @@
   }
 
   function wireEvents() {
-    for (const dialog of [elements.recordDialog, elements.passwordGeneratorDialog, elements.deleteDialog]) {
+    for (const dialog of [elements.recordDialog, elements.passwordGeneratorDialog, elements.deleteDialog, elements.supportDialog]) {
       enableBackdropDismiss(dialog);
     }
     enableBackdropDismiss(elements.unlockDialog, settleKeyDialogAsCancelled);
@@ -1054,6 +1058,12 @@
     elements.openGeneratorButton.querySelector('[data-icon]').innerHTML = getDiceIcon();
     elements.openGeneratorButton.setAttribute('title', 'Gerar senha');
     elements.openRecordModalButton.addEventListener('click', () => openRecordDialog());
+    elements.openSupportDialogButton.addEventListener('click', () => {
+      elements.supportDialog.showModal();
+      syncToastHost();
+    });
+    elements.closeSupportDialogButton.addEventListener('click', () => closeDialog(elements.supportDialog));
+    elements.supportDialog.addEventListener('close', syncToastHost);
     elements.openPasswordGeneratorButton.addEventListener('click', () => openPasswordGenerator(elements.passwordInput));
     elements.closeRecordDialogButton.addEventListener('click', () => closeDialog(elements.recordDialog));
     elements.closePasswordGeneratorDialogButton.addEventListener('click', () => closeDialog(elements.passwordGeneratorDialog));
