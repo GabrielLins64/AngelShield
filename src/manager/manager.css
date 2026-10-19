@@ -339,6 +339,8 @@ input[type="checkbox"] { accent-color: var(--brand); width: 16px; min-width: 16p
 .drive-config-dialog { width: min(760px, calc(100vw - 32px)); }
 .drive-config-dialog h2:focus { outline: none; }
 .drive-config-dialog .drive-setup { font-size: 12px; overflow-wrap: anywhere; }
+#google-clear-oauth { margin-right: auto; }
+#google-client-secret::-ms-reveal { display: none; }
 .drive-sync-panel { display: grid; gap: 18px; }
 .drive-setup { padding-left: 22px; color: var(--text-muted, #a5adbd); line-height: 1.7; }
 .drive-setup li + li { margin-top: 8px; }
@@ -372,6 +374,7 @@ input[type="checkbox"] { accent-color: var(--brand); width: 16px; min-width: 16p
   .drive-header-actions .drive-configure-button { order: -1; }
 }
 @media (max-width: 680px) {
+  .drive-config-dialog .form-actions > #google-clear-oauth { flex-basis: 100%; margin-right: 0; }
   .drive-copy-grid { grid-template-columns: 1fr; }
   .drive-version { align-items: flex-start; flex-direction: column; }
   .drive-config-dialog, .drive-review-dialog { width: calc(100vw - 20px); }

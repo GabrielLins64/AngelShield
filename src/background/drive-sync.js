@@ -283,6 +283,7 @@
     async function handle(message) {
       switch (message.type) {
         case 'DRIVE_GET_STATE': return state();
+        case 'DRIVE_GET_CONFIG': return drive.getConfig();
         case 'DRIVE_VALIDATE_CONNECTION': return { ...(await drive.validateConnection()), revision: await getRevision() };
         case 'DRIVE_GET_REMOTE_VERSION': return { remoteVersion: remoteVersion(await remote()) };
         case 'DRIVE_SAVE_CONFIG': invalidate(); return { ...(await drive.saveConfig(message.config || {})), revision: await getRevision() };

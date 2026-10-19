@@ -3,7 +3,7 @@
   const names = [
     'google-configure', 'google-config-dialog', 'google-config-title', 'google-close-config', 'google-cancel-config',
     'google-config-form', 'google-client-id', 'google-client-secret', 'google-folder-name',
-    'google-save-config', 'google-redirect-url', 'google-connect',
+    'google-save-config', 'google-clear-oauth', 'google-redirect-url', 'google-connect',
     'google-disconnect', 'google-connection-status', 'google-config-connection-status', 'google-config-connection-help',
     'drive-import-action', 'drive-export-action', 'drive-sync-panel', 'drive-version-placeholder', 'drive-local-version', 'drive-remote-version', 'drive-list-versions', 'drive-upload',
     'drive-recover-pending', 'drive-operation-status', 'drive-versions', 'drive-review-dialog', 'drive-close-review',
@@ -17,6 +17,7 @@
     data: null, review: null, differences: [], choices: new Map(), busy: false, committing: false, mode: '', generation: 0,
     connection: 'disconnected', connectionError: '', validationGeneration: 0, needsValidation: true,
     remoteVersion: null, remoteVersionStatus: 'idle', remoteVersionError: '', remoteVersionGeneration: 0,
+    configLoading: false, configLoadGeneration: 0,
   };
   const dialog = elements['drive-review-dialog'];
   const configDialog = elements['google-config-dialog'];
@@ -36,12 +37,13 @@
   function controls() {
     const connected = state.connection === 'connected' && Boolean(state.data?.connected);
     const configured = Boolean(state.data?.config?.clientId && state.data?.config?.hasClientSecret);
-    for (const name of ['google-save-config', 'google-close-config', 'google-cancel-config', 'google-client-id', 'google-client-secret', 'google-folder-name']) elements[name].disabled = state.busy;
-    elements['google-configure'].disabled = state.busy || !state.data?.config;
-    elements['google-connect'].disabled = state.busy || !configured;
+    for (const name of ['google-save-config', 'google-client-id', 'google-client-secret', 'google-folder-name']) elements[name].disabled = state.busy || state.configLoading;
+    for (const name of ['google-clear-oauth', 'google-close-config', 'google-cancel-config']) elements[name].disabled = state.busy;
+    elements['google-configure'].disabled = state.busy;
+    elements['google-connect'].disabled = state.busy || state.configLoading || !configured;
     elements['google-connect'].title = !configured ? 'Salve Client ID e Client Secret em Configurar Integração com Google.'
       : connected ? 'Conectar novamente ou trocar a conta Google' : '';
-    elements['google-disconnect'].disabled = state.busy || !state.data?.connected;
+    elements['google-disconnect'].disabled = state.busy || state.configLoading || !state.data?.connected;
     for (const name of ['drive-list-versions', 'drive-upload', 'drive-recover-pending']) {
       elements[name].disabled = state.busy || !connected;
     }
@@ -78,13 +80,11 @@
     state.data = { ...state.data, ...data };
     if (!state.data.connected && state.connection === 'connected') state.connection = 'disconnected';
     const settings = state.data.config;
-    if (fillForm && settings) {
-      elements['google-client-id'].value = settings.clientId;
-      elements['google-client-secret'].value = '';
-      elements['google-client-secret'].placeholder = settings.hasClientSecret ? 'Salvo — deixe vazio para manter' : 'Cole o Client Secret';
-      elements['google-folder-name'].value = settings.folderName;
+    if (fillForm) {
+      elements['google-client-id'].value = settings?.clientId || '';
+      elements['google-folder-name'].value = settings?.folderName || 'AngelShield';
     }
-    elements['google-redirect-url'].value = state.data.redirectUrl || '';
+    elements['google-redirect-url'].value = state.data.redirectUrl || chrome.identity?.getRedirectURL('google') || '';
     elements['google-disconnect'].hidden = !state.data.connected;
     if (state.data.revision) elements['drive-local-version'].textContent = `Versão local: ${revisionLabel(state.data.revision)}`;
     elements['drive-recover-pending'].hidden = !state.data.pendingUpload;
@@ -189,11 +189,38 @@
     }
   }
 
+  function cancelConfigLoad() {
+    state.configLoadGeneration += 1;
+    state.configLoading = false;
+  }
+
+  async function loadConfig() {
+    const generation = ++state.configLoadGeneration;
+    state.configLoading = true;
+    controls();
+    try {
+      const settings = await send('DRIVE_GET_CONFIG');
+      if (generation !== state.configLoadGeneration || !configDialog.open) return;
+      elements['google-client-id'].value = settings.clientId || '';
+      elements['google-client-secret'].value = settings.clientSecret || '';
+      elements['google-folder-name'].value = settings.folderName || 'AngelShield';
+    } catch (error) {
+      if (generation === state.configLoadGeneration && configDialog.open) manager.reportError(error);
+    } finally {
+      if (generation === state.configLoadGeneration) {
+        state.configLoading = false;
+        controls();
+      }
+    }
+  }
+
   function openConfig() {
-    if (state.busy || !state.data?.config) return;
-    render(state.data, true);
+    if (state.busy) return;
+    render(state.data || {}, true);
+    elements['google-client-secret'].value = '';
     configDialog.showModal();
     elements['google-config-title'].focus();
+    loadConfig();
   }
 
   function closeConfig() {
@@ -484,9 +511,25 @@
   elements['google-cancel-config'].addEventListener('click', closeConfig);
   manager.enableBackdropDismiss(configDialog, closeConfig);
   configDialog.addEventListener('cancel', (event) => { event.preventDefault(); closeConfig(); });
-  configDialog.addEventListener('close', () => { elements['google-client-secret'].value = ''; });
+  configDialog.addEventListener('close', () => {
+    cancelConfigLoad();
+    elements['google-client-secret'].value = '';
+    controls();
+  });
+  elements['google-clear-oauth'].addEventListener('click', () => run(async () => {
+    cancelConfigLoad();
+    invalidateConnection();
+    const config = { clientId: '', clientSecret: '', folderName: state.data?.config?.folderName || 'AngelShield' };
+    render(await send('DRIVE_SAVE_CONFIG', { config }), true);
+    elements['google-client-secret'].value = '';
+    state.needsValidation = false;
+    elements['drive-versions'].replaceChildren();
+    elements['drive-operation-status'].textContent = 'Cliente OAuth e autorização Google removidos deste navegador.';
+    manager.showToast('Cliente OAuth removido.');
+  }, 'Limpando cliente OAuth…'));
   elements['google-config-form'].addEventListener('submit', (event) => {
     event.preventDefault();
+    if (state.configLoading) return;
     run(async () => {
       invalidateConnection();
       const config = {
@@ -495,6 +538,7 @@
         folderName: elements['google-folder-name'].value,
       };
       render(await send('DRIVE_SAVE_CONFIG', { config }), true);
+      elements['google-client-secret'].value = config.clientSecret.trim();
       elements['drive-versions'].replaceChildren();
       elements['drive-operation-status'].textContent = 'Configuração salva neste navegador. Nenhuma sincronização foi iniciada.';
       manager.showToast('Configuração Google salva.');
@@ -509,7 +553,7 @@
     state.needsValidation = false;
     state.connection = result.connected ? 'connected' : 'disconnected';
     state.connectionError = '';
-    render(result, true);
+    render(result);
     if (state.connection === 'connected') refreshRemoteVersion();
     elements['drive-versions'].replaceChildren();
     elements['drive-operation-status'].textContent = 'Conta conectada. Use Importar do Drive para escolher uma versão ou Exportar para o Drive para salvar uma cópia.';
@@ -518,7 +562,7 @@
     invalidateConnection();
     const result = await send('DRIVE_DISCONNECT');
     state.needsValidation = false;
-    render(result, true);
+    render(result);
     elements['drive-versions'].replaceChildren();
     elements['drive-operation-status'].textContent = result.revoked ? 'Conta desconectada.' : 'Conta desconectada neste navegador. Não foi possível confirmar a revogação no Google.';
     manager.showToast(elements['drive-operation-status'].textContent);
@@ -589,7 +633,7 @@
   window.addEventListener('angelshield-vault-state', controls);
   controls();
   send('DRIVE_GET_STATE').then((data) => {
-    render(data, true);
+    render(data, !configDialog.open);
     validateWhenVisible();
   }).catch(manager.reportError);
 })();

@@ -125,6 +125,10 @@ Copie o Client Secret completo assim que ele for criado: o Google só permite v�
 
 Para alterar as credenciais ou o nome da pasta, clique na engrenagem novamente. Os botões **Conectar conta Google** e **Desconectar conta Google** ficam nessa janela. Para renovar a autorização ou trocar de conta, use **Conectar conta Google**.
 
+O campo **Client Secret** carrega o segredo salvo e funciona como o Client ID: você pode editar, substituir por um novo valor ou apagar e clicar em **Salvar configuração**. Ele permanece mascarado como senha, sem botão para visualizar. Você também pode salvar os dois campos vazios; será preciso configurá-los novamente antes de conectar.
+
+O botão **Limpar cliente OAuth** apaga imediatamente o Client ID, o Client Secret e a autorização Google deste navegador, mantendo o nome da pasta salvo. A limpeza funciona mesmo sem internet. Se deixar **Nome da pasta** vazio ao salvar, o AngelShield usa o nome padrão **AngelShield**.
+
 Ao abrir a página de configurações com credenciais salvas, o AngelShield verifica a autorização de forma assíncrona. O card mostra **Não conectado**, **Validando conexão...** ou **Conectado**. Enquanto a conexão não estiver confirmada, **Importar do Drive** e **Exportar para o Drive** ficam desabilitados; a dica ao passar o cursor orienta a seguir as instruções da engrenagem. Se ainda não autorizou uma conta, abra a engrenagem e clique em **Conectar conta Google**. O teste não abre o login automaticamente; pode renovar o token salvo para confirmar o acesso à conta.
 
 Após confirmar a conexão, o card consulta o histórico da pasta configurada e mostra **Versão no Drive** abaixo de **Versão local**, com número e data. Se não houver backups, mostra **nenhum backup**. Se houver ramificações, informa a quantidade; passe o cursor na versão para ver os números e datas envolvidos. Se a consulta falhar, mostra **indisponível**, com o motivo ao passar o cursor. Essa leitura usa apenas os metadados dos arquivos, sem baixar senhas ou alterar a lista local. A informação também é atualizada ao consultar as versões e após concluir uma importação ou exportação.

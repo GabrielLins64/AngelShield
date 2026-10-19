@@ -314,13 +314,13 @@
         </details>
         <form id="google-config-form" class="settings-form">
           <div class="form-grid">
-            <label class="field"><span>OAuth Client ID</span><input id="google-client-id" type="text" autocomplete="off" spellcheck="false" placeholder="….apps.googleusercontent.com" required></label>
-            <label class="field"><span>OAuth Client Secret</span><input id="google-client-secret" type="password" autocomplete="new-password" placeholder="Cole o Client Secret"></label>
+            <label class="field"><span>OAuth Client ID</span><input id="google-client-id" type="text" autocomplete="off" spellcheck="false" placeholder="….apps.googleusercontent.com"></label>
+            <label class="field"><span>OAuth Client Secret</span><input id="google-client-secret" type="password" autocomplete="new-password" spellcheck="false" autocapitalize="off"></label>
           </div>
-          <label class="field"><span>Nome da pasta</span><input id="google-folder-name" type="text" autocomplete="off" value="AngelShield" required></label>
+          <label class="field"><span>Nome da pasta</span><input id="google-folder-name" type="text" autocomplete="off" value="AngelShield" placeholder="AngelShield"></label>
           <label class="field"><span>Redirecionamento para cadastrar no Google Cloud</span><input id="google-redirect-url" type="text" readonly spellcheck="false"></label>
-          <p class="field-help">Deixe Client Secret vazio para manter o valor salvo. O AngelShield usa a pasta com o nome informado e a cria no primeiro envio, se necessário. Nenhum salt ou chave do cofre é enviado ao Google.</p>
-          <div class="form-actions"><button id="google-cancel-config" class="button button-secondary" type="button">Fechar</button><button id="google-save-config" class="button button-primary" type="submit">Salvar configuração</button></div>
+          <p class="field-help">Para remover uma credencial, apague o campo e salve. Limpar cliente OAuth remove as duas credenciais e a autorização local imediatamente. Se o nome da pasta ficar vazio, será usado AngelShield. Nenhum salt ou chave do cofre é enviado ao Google.</p>
+          <div class="form-actions"><button id="google-clear-oauth" class="button button-danger" type="button">Limpar cliente OAuth</button><button id="google-cancel-config" class="button button-secondary" type="button">Fechar</button><button id="google-save-config" class="button button-primary" type="submit">Salvar configuração</button></div>
         </form>
         <div class="drive-config-connection">
           <p id="google-config-connection-status" class="google-connection-status field-help" data-state="disconnected" role="status" aria-live="polite">Não conectado</p>

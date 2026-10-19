@@ -51,13 +51,14 @@
     const previous = await config();
     const next = {
       clientId: String(input.clientId || '').trim(),
-      clientSecret: String(input.clientSecret || '').trim() || previous.clientSecret,
+      clientSecret: Object.hasOwn(input, 'clientSecret') ? String(input.clientSecret || '').trim() : previous.clientSecret,
       folderName: String(input.folderName || '').trim() || 'AngelShield',
     };
     if (next.clientId && !/^[\w.-]+\.apps\.googleusercontent\.com$/.test(next.clientId)) {
       fail('Informe um Client ID válido do Google Cloud.');
     }
-    if (next.clientId !== previous.clientId || next.clientSecret !== previous.clientSecret) await clearAuth();
+    if (next.clientId !== previous.clientId || next.clientSecret !== previous.clientSecret
+      || !next.clientId || !next.clientSecret) await clearAuth();
     await chrome.storage.local.set({ [CONFIG]: next });
     return publicState();
   }
@@ -323,7 +324,7 @@
   }
 
   root.AngelShieldGoogleDrive = {
-    publicState, saveConfig, validateConnection, connect, disconnect, folder, binding, snapshots, generateId, upload,
+    publicState, getConfig: config, saveConfig, validateConnection, connect, disconnect, folder, binding, snapshots, generateId, upload,
     download: (fileId) => request(`files/${encodeURIComponent(fileId)}?alt=media`, {}, true),
     file: (fileId) => request(`files/${encodeURIComponent(fileId)}?fields=${FILE_FIELDS},trashed`),
   };

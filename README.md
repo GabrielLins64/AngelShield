@@ -88,7 +88,7 @@ Exemplo de `.zip` para upload:
 
 ```bash
 mkdir -p dist
-zip -r dist/angelshield-0.1.1.zip manifest.json src assets
+zip -r dist/angelshield-0.1.2.zip manifest.json src assets
 ```
 
 O `manifest.json` deve ficar na raiz do ZIP. A pasta `assets` inclui o logotipo, os ícones e o QR Code Pix. A versão do nome do pacote deve acompanhar a versão do manifesto.
@@ -113,7 +113,7 @@ O projeto inclui os ícones e as imagens iniciais da listagem. Antes de enviar �
 - revisão final de UX e textos
 - publicação da política de privacidade e conferência das declarações no dashboard
 
-A política está publicada em [gabriellins64.github.io/angelshield-privacy](https://gabriellins64.github.io/angelshield-privacy/), com uma cópia local em [docs/privacy.html](docs/privacy.html). Os textos dos campos de privacidade estão em [store/privacy-fields.txt](store/privacy-fields.txt). Use a URL pública no painel e mantenha a cópia local e o [repositório da política](https://github.com/GabrielLins64/angelshield-privacy) alinhados. A versão 0.1.1 remove a permissão `tabs`, que não é necessária para as operações de abas usadas pela extensão.
+A política está publicada em [gabriellins64.github.io/angelshield-privacy](https://gabriellins64.github.io/angelshield-privacy/), com uma cópia local em [docs/privacy.html](docs/privacy.html). Os textos dos campos de privacidade estão em [store/privacy-fields.txt](store/privacy-fields.txt). Use a URL pública no painel e mantenha a cópia local e o [repositório da política](https://github.com/GabrielLins64/angelshield-privacy) alinhados. A versão 0.1.1 remove a permissão `tabs`, que não é necessária para as operações de abas usadas pela extensão. A versão 0.1.2 corrige o acesso à configuração inicial do Google Drive: a engrenagem fica disponível mesmo sem credenciais salvas ou durante o carregamento inicial, enquanto importar e exportar continuam dependendo da conexão validada. Também permite limpar as credenciais OAuth e salvar campos vazios, com o segredo em um campo de senha editável e sem opção de visualizar.
 
 ## Formato de CSV
 
@@ -143,6 +143,8 @@ A integração é opcional e fica em **Configurações → Google Drive**. O cof
 O card mostra **Importar do Drive** e **Exportar para o Drive** empilhados. A engrenagem do cabeçalho abre **Configurar Integração com Google**, com instruções, campos avançados e os botões para conectar ou desconectar a conta. Salve Client ID e Client Secret e clique em **Conectar conta Google** nessa janela.
 
 Ao abrir a página de configurações, o AngelShield valida a conexão em segundo plano se as credenciais estiverem salvas. O status passa por **Não conectado**, **Validando conexão...** e **Conectado**. Importação e exportação ficam desabilitadas até confirmar a conexão; ao passar o cursor, a dica orienta a abrir a engrenagem e seguir as instruções. Após validar a conta, consulta os metadados do histórico na pasta configurada para exibir **Versão no Drive** junto da versão local, com número e data ou **nenhum backup**. Se houver ramificações, o indicador avisa. Essa consulta não baixa o conteúdo dos backups, não sincroniza registros e não abre o login automaticamente.
+
+Na configuração, o **Client Secret** carrega o valor salvo em um campo editável, mascarado como senha e sem opção de visualizar. Você pode substituir o valor ou apagar o campo e salvar para removê-lo, assim como no Client ID. Os campos OAuth podem ser salvos vazios. **Limpar cliente OAuth** remove imediatamente as duas credenciais e os tokens Google deste navegador, mantendo o nome da pasta salvo; remover uma credencial também encerra a autorização local.
 
 ### Configuração no Google Cloud
 
