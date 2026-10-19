@@ -91,7 +91,7 @@ Se o assistente de **Dados do usuário** já chegou à escolha do tipo de aplica
 O redirecionamento é o endereço que devolve o login para a extensão. Você vai copiá-lo da tela do AngelShield e cadastrá-lo no Google.
 
 1. Em **Tipo de aplicativo**, escolha **Aplicativo da Web**. É o tipo usado pela integração atual do AngelShield.
-2. Dê um nome, como `AngelShield neste navegador`.
+2. Dê um nome, como `AngelShield`.
 3. Abra o AngelShield em outra aba, vá a **Configurações → Google Drive** e clique na engrenagem do cabeçalho para abrir **Configurar Integração com Google**.
 4. Copie o campo **Redirecionamento para cadastrar no Google Cloud**.
 5. Volte ao Google Cloud. Em **URIs de redirecionamento autorizadas**, clique em **Adicionar URI** e cole o endereço inteiro.
@@ -99,11 +99,15 @@ O redirecionamento é o endereço que devolve o login para a extensão. Você va
 7. Clique em **Criar**.
 8. Copie o **ID do cliente / Client ID** e o **Segredo do cliente / Client Secret** para os campos correspondentes do AngelShield.
 
-O redirecionamento terá este formato, mas você deve usar o valor real mostrado na sua extensão:
+Com o manifesto atual, o redirecionamento é o mesmo em todos os computadores:
 
 ```text
-https://<id-da-sua-extensao>.chromiumapp.org/google
+https://ppegkiaeakaakopooipcllfjcefnbhff.chromiumapp.org/google
 ```
+
+Cadastre esse endereço uma vez no cliente OAuth que será usado nas instalações. O campo `key` do `manifest.json` contém a chave pública da Chrome Web Store e mantém o ID da extensão também ao carregar sem compactação. Preserve essa chave nas cópias do projeto. [Como manter o mesmo ID](https://developer.chrome.com/docs/extensions/reference/manifest/key).
+
+Se a tela mostrar outro redirecionamento, você ainda está usando uma instalação com outro ID. **Antes de recarregá-la com o manifesto atual, exporte o CSV e anote seu salt global.** O Chrome separa os dados por ID: no novo ID, configure o mesmo salt antes de importar o CSV, use a mesma senha do cofre e configure a conexão Google novamente. O salt não é enviado ao Drive e não acompanha o CSV.
 
 Copie o Client Secret completo assim que ele for criado: o Google só permite vê-lo ou baixá-lo integralmente nesse momento. Se perdeu esse valor, gere um novo segredo na configuração do cliente. [Como gerenciar clientes e segredos](https://support.google.com/cloud/answer/15549257).
 
@@ -161,7 +165,7 @@ O site e a política precisam estar publicados e acessíveis sem login. A págin
 | “Dados do usuário” ou “Dados do aplicativo” | Escolha **Dados do usuário** e siga pelo cliente OAuth. |
 | Só consegui uma chave começando com `AIza` | Essa chave de API não é usada pelo AngelShield. Siga o passo 6 para obter Client ID e Client Secret. |
 | Não apareceu o Client Secret | Confira se criou um cliente **Aplicativo da Web**. Se fechou a tela de criação e perdeu o segredo, gere outro na configuração desse cliente. |
-| `redirect_uri_mismatch` | Copie novamente o redirecionamento real do AngelShield e salve-o nas URIs autorizadas do mesmo cliente. Confira o final `/google`. |
+| `redirect_uri_mismatch` | Confira se o mesmo cliente OAuth tem a URI `https://ppegkiaeakaakopooipcllfjcefnbhff.chromiumapp.org/google` e se ela corresponde ao valor mostrado no AngelShield. Se o ID for diferente, siga a orientação de atualização no passo 6. |
 | A conta não pode acessar o aplicativo em teste | Adicione esse e-mail em **Público-alvo → Usuários de teste** e use a mesma conta no login. |
 | O Google pede nova autorização depois de alguns dias | No modo **Em teste**, a autorização com acesso ao Drive e seu token de renovação expiram em sete dias. Clique novamente em **Conectar conta Google**. [Regra do Google para aplicativos em teste](https://support.google.com/cloud/answer/15549945). |
 | API desativada ou acesso negado | Confira se a Drive API foi ativada no projeto que contém o Client ID usado no AngelShield. |

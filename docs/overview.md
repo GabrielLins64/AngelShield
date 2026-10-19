@@ -23,7 +23,7 @@ O AngelShield é uma extensão compatível com Chrome que mantém um cofre local
 
 ## Arquitetura
 
-- `manifest.json`: define permissões, service worker, content script e páginas da extensão.
+- `manifest.json`: define permissões, service worker, content script e páginas da extensão. O campo `key` mantém a chave pública da Chrome Web Store para fixar o ID `ppegkiaeakaakopooipcllfjcefnbhff` também nas instalações de desenvolvimento.
 - `src/background/service-worker.js`: coordena armazenamento, lock/unlock, criptografia, CSV e abertura da tela de gerenciamento.
 - `src/background/google-drive.js`: OAuth com PKCE, configuração e tokens Google, pastas e API REST do Drive.
 - `src/background/drive-sync.js`: revisões manuais, detecção de ramificações, confirmação de operações, mesclagem e recuperação de envios incertos.

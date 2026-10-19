@@ -26,6 +26,14 @@ angelshield/
 5. A extensão `AngelShield` aparecerá na lista e já poderá ser usada
 6. Clique no ícone da extensão para abrir a tela de gerenciamento
 
+### ID fixo da extensão
+
+O campo `key` do `manifest.json` contém a chave pública do item da Chrome Web Store. Ela fixa o ID `ppegkiaeakaakopooipcllfjcefnbhff` também nas instalações sem compactação, independentemente do computador ou da pasta do projeto. Preserve essa chave nas cópias e atualizações. [Como o Chrome mantém o mesmo ID](https://developer.chrome.com/docs/extensions/reference/manifest/key).
+
+Essa chave pública identifica a extensão; ela não é a senha do cofre nem o Client Secret do Google.
+
+Se sua instalação local ainda usa outro ID, como `fobmhnkkdklidbingekifampoajieaja`, **exporte o CSV e anote o salt global atual antes de recarregar a extensão**. Cada ID tem seu próprio armazenamento no Chrome. Ao carregar a extensão com o ID fixo, configure o mesmo salt antes de importar o CSV, use a mesma senha do cofre e configure novamente a conexão Google. O salt permanece exclusivamente local e não acompanha o CSV ou o backup do Drive.
+
 ## Atalhos
 
 - `Ctrl+Shift+Y`: abre a caixa de autopreenchimento do AngelShield na aba ativa, quando houver um formulário de login visível na página.
@@ -165,7 +173,7 @@ As escolhas para esta integração são:
 
 Não é preciso criar uma chave de API: a integração usa Client ID, Client Secret e a autorização da sua conta Google.
 
-O redirecionamento mostrado no AngelShield deve ser copiado inteiro para as **URIs de redirecionamento autorizadas** do cliente. Ele termina em `/google`. Se o ID da extensão mudar, atualize esse endereço no Google Cloud.
+Cadastre `https://ppegkiaeakaakopooipcllfjcefnbhff.chromiumapp.org/google` nas **URIs de redirecionamento autorizadas** do cliente. Esse endereço permanece igual entre computadores com o manifesto atual. Confira também o valor mostrado no AngelShield: instalações antigas com outro ID precisam ser atualizadas para usar a chave pública do manifesto.
 
 A conexão utiliza código de autorização com PKCE. O refresh token permanece no armazenamento local da extensão; access tokens ficam na sessão e podem ser renovados durante a validação da conexão ou uma operação manual. A chave do cofre mantém seu mecanismo atual de máscara na sessão e não é usada para armazenar tokens Google.
 

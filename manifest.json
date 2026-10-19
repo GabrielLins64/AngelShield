@@ -3,6 +3,7 @@
   "minimum_chrome_version": "116",
   "name": "AngelShield",
   "version": "0.1.2",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAh7tEUeFbY5ImwgwELsgcOawQk7sun0o+iwsTYxSGN3p7tsb3BTvwuVXrl/o4nqIFA2friWG6YSydhVlKdhL3A+noKekmAWszh+nF6IihKJBwnUEA45Nh8vSqqZwBpknDYOzkFWNNrBCVuEkKLJMdTZGcjRYc7+0zOrdFZmhMFveO7oiE0LQPeNwt89Mr0Q6i5OQJVvpBYlDWg6majTAM9H/PVsG0j6STihGxUKEzcALhOVF6Y2OK3/5mHXeDQnCoT385dJ4wnbkiUhyIinB39g9gAzGgAWQ6CwDyf/NxVJISlVSCm+z1h67WCHCpb05/ABnI0xSTvQtHWfBPbjdJvQIDAQAB",
   "description": "Gerenciador local de credenciais com criptografia simétrica e preenchimento assistido.",
   "permissions": ["storage", "clipboardWrite", "identity"],
   "host_permissions": ["<all_urls>"],
