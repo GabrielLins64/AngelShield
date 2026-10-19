@@ -139,6 +139,21 @@ Se houver várias pastas do AngelShield com o mesmo nome, renomeie as duplicadas
 
 Clique em **Importar do Drive** para buscar o histórico e escolher uma versão. Depois, use **Baixar / revisar** na versão desejada para revisar e confirmar a substituição local. Cada operação é manual e pede as confirmações necessárias na UI.
 
+## 8. Sair do modo Em teste
+
+Quando a configuração estiver funcionando e você quiser publicar a autorização Google:
+
+1. Em **Plataforma de autenticação do Google → Branding**, confira nome, e-mail de suporte e contato do desenvolvedor. Para o AngelShield, use:
+   - **Página inicial:** `https://gabriellins64.github.io/angelshield-site/`
+   - **Política de privacidade:** `https://gabriellins64.github.io/angelshield-site/privacidade/`
+2. Em **Domínios autorizados**, adicione `gabriellins64.github.io` para esses links e mantenha o domínio usado pelo redirecionamento da extensão. Salve. Se **Publicar app** estiver desabilitado, confira a mensagem sobre campos pendentes no Branding.
+3. Em **Acesso a dados**, cadastre somente `https://www.googleapis.com/auth/drive.file` e salve. Esse é o escopo não sensível usado pela extensão. [Classificação do Google](https://developers.google.com/workspace/drive/api/guides/api-specific-auth).
+4. Abra **Público-alvo**, confira **Externo**, clique em **Publicar app** e leia a confirmação. Ao confirmar, o status deve mudar de **Testando** para **Em produção**.
+5. Se o Google solicitar verificação, siga a **Central de verificação**. A análise de marca ou de permissões depende da configuração do projeto; publicar em produção e obter a verificação são etapas diferentes. [Regras de publicação e público-alvo](https://support.google.com/cloud/answer/15549945).
+6. Depois da publicação, use **Conectar conta Google** novamente no AngelShield para renovar a autorização criada durante os testes. Tokens e autorizações continuam sujeitos às regras de expiração e revogação do Google.
+
+O site e a política precisam estar publicados e acessíveis sem login. A página inicial deve explicar o aplicativo e oferecer um link para a política. O Google pode solicitar a comprovação de propriedade dos domínios durante a verificação. [Requisitos de verificação da marca](https://developers.google.com/identity/protocols/oauth2/production-readiness/brand-verification).
+
 ## Se algo não funcionar
 
 | O que apareceu | O que conferir |
