@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="color-scheme" content="light dark">
+    <title>Política de privacidade · AngelShield</title>
+    <style>
+      :root { font-family: system-ui, sans-serif; line-height: 1.7; color-scheme: light dark; }
+      body { max-width: 820px; margin: 0 auto; padding: 40px 24px 64px; }
+      h1 { font-size: clamp(1.8rem, 5vw, 2.5rem); line-height: 1.2; }
+      h2 { margin-top: 2rem; font-size: 1.25rem; line-height: 1.4; }
+      .updated { opacity: .75; }
+      a { text-underline-offset: .2em; }
+      li { margin-bottom: .6rem; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Política de privacidade do AngelShield</h1>
+      <p class="updated">Última atualização: <time datetime="2026-10-19">19 de outubro de 2026</time></p>
+      <p>O AngelShield é uma extensão para gerenciar credenciais pessoais localmente, gerar senhas, auxiliar o salvamento e o preenchimento de formulários de login e realizar backups opcionais no Google Drive do usuário. Esta política descreve o tratamento de dados pela extensão.</p>
+
+      <h2>1. Dados tratados e suas finalidades</h2>
+      <ul>
+        <li><strong>Credenciais:</strong> nome da credencial, usuário ou e-mail, endereço do site, senha e observação, para organizar os registros, copiá-los e preencher o formulário escolhido pelo usuário.</li>
+        <li><strong>Páginas e formulários:</strong> domínio, endereço, título da página e campos de usuário e senha, para identificar o site, sugerir credenciais compatíveis e oferecer o salvamento de um login submetido. A extensão não mantém um histórico geral de navegação, registros de teclas digitadas ou telemetria de cliques.</li>
+        <li><strong>Configurações do cofre:</strong> salt global, chave informada pelo usuário, preferências e versões dos registros, para operar o cofre, criptografar e recuperar senhas e revisar backups.</li>
+        <li><strong>Integração opcional com Google:</strong> configuração OAuth, tokens de autorização e identificação da conta conectada, incluindo nome e e-mail quando fornecidos pelo Google, para autorizar e manter a conexão com o Drive.</li>
+      </ul>
+
+      <h2>2. Armazenamento local e dados temporários</h2>
+      <p>Os registros do cofre e as configurações ficam no armazenamento local da extensão neste navegador. Apenas o campo de senha dos registros é criptografado. Nome da credencial, usuário, site e observação não são criptografados. A chave do cofre fica mascarada no armazenamento de sessão durante o destrancamento e é removida ao trancar o cofre. Ela não é incluída nos arquivos CSV ou backups do Drive.</p>
+      <p>Ao detectar o envio de um formulário de login, a extensão pode ler o usuário e a senha para oferecer o salvamento. Esses dados podem permanecer temporariamente, inclusive em texto claro, no armazenamento de sessão: a sugestão de salvamento tem validade de até dois minutos; o preenchimento inicial do formulário de cadastro tem validade de até cinco minutos. A inclusão permanente no cofre exige a confirmação de salvar a credencial.</p>
+      <p>Se o usuário configurar o Google Drive, a configuração OAuth e o token de renovação ficam no armazenamento local; o token de acesso fica na sessão. Esses dados são separados da chave usada para as senhas do cofre.</p>
+
+      <h2>3. Preenchimento de login e área de transferência</h2>
+      <p>Quando o usuário escolhe preencher um login, a extensão insere o usuário e a senha no formulário do site selecionado. Esses dados passam a estar disponíveis à página de destino para a operação de login, sujeita às práticas de privacidade daquele site. Os botões de cópia escrevem o usuário ou a senha na área de transferência por solicitação do usuário. A extensão não lê o conteúdo da área de transferência.</p>
+
+      <h2>4. Google Drive e transferência de dados</h2>
+      <p>A conexão com o Google Drive é opcional e depende da configuração e da autorização do usuário. A extensão usa conexões HTTPS com os serviços de autorização do Google e a API do Drive. O escopo solicitado é <code>drive.file</code>, para os arquivos usados pela integração.</p>
+      <p>Ao abrir as configurações, uma conexão previamente autorizada pode ser validada e os metadados das versões de backup podem ser consultados. Os envios de backups e as substituições dos registros locais dependem das ações e confirmações do usuário.</p>
+      <p>Os backups enviados ao Drive contêm os campos identificador do registro, nome da credencial, usuário, site, senha criptografada e observação. Os demais campos são apenas codificados em Base64, o que não constitui criptografia. O salt, a chave do cofre e as credenciais OAuth não são incluídos nesses arquivos. Os backups ficam na conta Google escolhida e estão sujeitos às práticas do Google, descritas na <a href="https://policies.google.com/privacy">Política de Privacidade do Google</a>.</p>
+      <p>O AngelShield não envia credenciais, dados de navegação ou estatísticas de uso a servidores do desenvolvedor, não contém publicidade e não vende dados. Os dados são usados somente para as funcionalidades descritas nesta política. O uso de informações recebidas das APIs do Google segue a <a href="https://developer.chrome.com/docs/webstore/program-policies/user-data-faq">Política de Dados do Usuário da Chrome Web Store</a> e a <a href="https://developers.google.com/terms/api-services-user-data-policy">Política de Dados do Usuário dos Serviços de API do Google</a>, incluindo os requisitos de uso limitado. Os dados não são usados para publicidade, análise de crédito ou concessão de empréstimos.</p>
+
+      <h2>5. Exportação, exclusão e controle</h2>
+      <p>O usuário pode editar e excluir credenciais na interface do cofre, exportar ou importar arquivos CSV, trancar a sessão e desconectar a conta Google. Ao desconectar, a extensão remove os tokens de autorização armazenados e tenta revogar a autorização no Google. A autorização também pode ser revogada diretamente na conta Google.</p>
+      <p>Excluir uma credencial local ou desconectar a conta não apaga arquivos CSV já exportados nem versões anteriores no Drive. Para remover essas cópias, o usuário deve excluí-las nos locais em que foram salvas. As configurações locais permanecem até serem alteradas ou até a remoção dos dados da extensão.</p>
+
+      <h2>6. Apoio voluntário</h2>
+      <p>O modal de apoio apresenta um QR Code Pix. Uma eventual contribuição é realizada pelo usuário no aplicativo do seu banco. A extensão não processa pagamentos nem coleta os dados bancários da pessoa que contribui.</p>
+
+      <h2>7. Contato e alterações</h2>
+      <p>Para dúvidas sobre esta política ou sobre o tratamento de dados, entre em contato com o desenvolvedor, <a href="https://github.com/GabrielLins64">GabrielLins64</a>, pelo <a href="https://github.com/GabrielLins64/angelshield-privacy/issues">canal de suporte do AngelShield no GitHub</a>.</p>
+      <p>Esta página é hospedada no GitHub Pages e não inclui ferramentas de análise de visitas ou publicidade. O provedor de hospedagem pode tratar dados técnicos de acesso conforme a <a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement">Política de Privacidade do GitHub</a>.</p>
+      <p>Esta política pode ser atualizada para refletir mudanças no funcionamento da extensão. A data da versão vigente aparece no início desta página.</p>
+    </main>
+  </body>
+</html>

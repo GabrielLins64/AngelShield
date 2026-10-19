@@ -62,7 +62,7 @@ Para outro desenvolvedor testar localmente, basta enviar a pasta do projeto ou u
 Exemplo de empacotamento:
 
 ```bash
-zip -r angelshield.zip manifest.json src README.md AGENTS.md docs
+zip -r angelshield.zip manifest.json src assets README.md AGENTS.md docs
 ```
 
 Observação:
@@ -87,28 +87,33 @@ De forma geral:
 Exemplo de `.zip` para upload:
 
 ```bash
-zip -r angelshield-store.zip manifest.json src
+mkdir -p dist
+zip -r dist/angelshield-0.1.1.zip manifest.json src assets
 ```
+
+O `manifest.json` deve ficar na raiz do ZIP. A pasta `assets` inclui o logotipo, os ícones e o QR Code Pix. A versão do nome do pacote deve acompanhar a versão do manifesto.
+
+Os arquivos da listagem estão em [store/](store/README.md): ícone de 128 × 128, imagem promocional de 440 × 280 e três capturas de 1280 × 800 com dados fictícios. Eles são enviados nos campos de imagens do painel, separadamente do pacote da extensão.
 
 ## Checklist antes de publicar na Chrome Web Store
 
 Antes do primeiro deploy público, revise estes pontos:
 
-1. Adicionar ícones da extensão e a chave `icons` no `manifest.json`
+1. Conferir os ícones de 16, 32, 48 e 128 pixels em `assets/icons` e suas referências no `manifest.json`
 2. Definir versão de release em `manifest.json`
 3. Revisar textos de descrição e permissões
-4. Preparar imagens da listagem da loja
+4. Conferir e atualizar as imagens da listagem em `store/` quando a interface mudar
 5. Declarar corretamente privacidade e uso de dados no painel da Chrome Web Store
 6. Testar lock/unlock, export/import CSV e preenchimento automático em sites reais
 
 ### Observação importante sobre este projeto
 
-O projeto atual já funciona para desenvolvimento local, mas para publicação na loja você provavelmente vai querer complementar pelo menos:
+O projeto inclui os ícones e as imagens iniciais da listagem. Antes de enviar à loja, conclua:
 
-- ícones da extensão
-- assets da listagem
 - revisão final de UX e textos
-- conferência das declarações de privacidade no dashboard
+- publicação da política de privacidade e conferência das declarações no dashboard
+
+A política está publicada em [gabriellins64.github.io/angelshield-privacy](https://gabriellins64.github.io/angelshield-privacy/), com uma cópia local em [docs/privacy.html](docs/privacy.html). Os textos dos campos de privacidade estão em [store/privacy-fields.txt](store/privacy-fields.txt). Use a URL pública no painel e mantenha a cópia local e o [repositório da política](https://github.com/GabrielLins64/angelshield-privacy) alinhados. A versão 0.1.1 remove a permissão `tabs`, que não é necessária para as operações de abas usadas pela extensão.
 
 ## Formato de CSV
 
